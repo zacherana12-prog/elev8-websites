@@ -365,4 +365,32 @@ document.addEventListener('click',async function(e){
 });
 addEventListener('load',function(){setTimeout(function(){renderCustomForm(null);loadSupplierWorkflow()},2200);setInterval(loadSupplierWorkflow,8000)});
 })();
+</script><script id="e8-live-sync">
+(function(){
+  const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests'];
+  let ch=null,timer=0,started=false;
+  function refresh(){
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      try{
+        if(typeof rqLoad==='function' && document.getElementById('rqApp') && !document.getElementById('rqApp').hidden) rqLoad();
+      }catch(e){}
+      try{
+        if(typeof load==='function' && document.getElementById('app') && !document.getElementById('app').hidden) load();
+      }catch(e){}
+      try{if(typeof loadSupplierWorkflow==='function')loadSupplierWorkflow()}catch(e){}
+    },300);
+  }
+  function start(){
+    if(started||typeof sb==='undefined'||!sb)return;
+    started=true;
+    ch=sb.channel('elev8-live-sync');
+    TABLES.forEach(function(table){
+      ch.on('postgres_changes',{event:'*',schema:'public',table:table},refresh);
+    });
+    ch.subscribe();
+  }
+  setInterval(start,1000);
+  window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
+})();
 </script></body></html>
