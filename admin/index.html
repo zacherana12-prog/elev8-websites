@@ -2030,14 +2030,19 @@ function renderSupplierStock(){
 }
 function setNum(tr,k,n){var el=tr.querySelector('[data-st-f="'+k+'"]');if(el)el.value=String(Math.max(0,Math.floor(Number(n)||0)))}
 function previewStatus(tr,status){
-  var sub=Number(tr.dataset.submitted||0),aq=Number(tr.querySelector('[data-st-f="approved_quantity"]')?.value||0),cq=Number(tr.querySelector('[data-st-f="collected_quantity"]')?.value||0),sq=Number(tr.querySelector('[data-st-f="sold_quantity"]')?.value||0);
+  var sub=Number(tr.dataset.submitted||0),
+      aq=Number(tr.querySelector('[data-st-f="approved_quantity"]')?.value||0),
+      cq=Number(tr.querySelector('[data-st-f="collected_quantity"]')?.value||0),
+      sq=Number(tr.querySelector('[data-st-f="sold_quantity"]')?.value||0);
   if(status==='submitted'||status==='cancelled'){aq=0;cq=0;sq=0}
   else if(status==='approved'){aq=aq||sub;cq=0;sq=0}
-  else if(status==='collected'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=0}
-  else if(status==='listed'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=Math.min(sq,cq)}
-  else if(status==='sold'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=cq}
-  else if(status==='partially_sold'){aq=Math.min(sub,Math.max(aq,cq));cq=Math.min(aq,Math.max(cq,0));sq=Math.min(cq,Math.max(sq,0))}
-  setNum(tr,'approved_quantity',aq);setNum(tr,'collected_quantity',cq);setNum(tr,'sold_quantity',sq);
+  else if(status==='collected'){aq=aq||sub;cq=cq||aq;sq=0}
+  else if(status==='listed'){aq=aq||sub;cq=cq||aq;sq=Math.min(sq,cq)}
+  else if(status==='partially_sold'){aq=aq||sub;cq=cq||aq;sq=Math.min(sq,cq)}
+  else if(status==='sold'){aq=aq||sub;cq=cq||aq;sq=cq}
+  setNum(tr,'approved_quantity',Math.min(sub,Math.max(0,aq)));
+  setNum(tr,'collected_quantity',Math.min(Math.min(sub,Math.max(0,aq)),Math.max(0,cq)));
+  setNum(tr,'sold_quantity',Math.min(Math.min(sub,Math.max(0,aq)),Math.max(0,cq),Math.max(0,sq)));
 }
 async function saveStock(id){
   var tr=document.querySelector('[data-stock-row="'+id+'"]');if(!tr)return;
@@ -2398,13 +2403,3 @@ E('bDel').onclick=function(){
   if(x.error){msg('Could not clear supplier: '+x.error.message);return}
   S.ents=S.ents.filter(function(e){return String(e.sup||'').toLowerCase()!==String(p.name||'').toLowerCase()});
   S.items=S.items.filter(function(e){return String(e.supplier_id||'')!==p.id});
-  S.profs=S.profs.filter(function(e){return String(e.id||'')!==p.id});
-  save();renderAll();if(window.e8SyncInventory)await window.e8SyncInventory();if(window.e8LoadLiveDashboard)await window.e8LoadLiveDashboard();
-  msg(p.name+' operational data cleared. Account and profile preserved.');
- });
-};
-E('data')?.addEventListener('click',function(){setTimeout(renderDataLive,0)});
-window.addEventListener('load',function(){setTimeout(renderDataLive,2300)});
-setInterval(function(){if(ready8r())renderDataLive()},8000);
-})();
-</script></body></html>
