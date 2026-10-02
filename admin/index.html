@@ -1570,12 +1570,10 @@ function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionD
 function X(v){var d=document.createElement('div');d.textContent=v==null?'':v;return d.innerHTML}
 async function loadPayAdmin(){
  if(typeof sb==='undefined'||!sb)return;
- var z=await Promise.all([sb.from('profiles').select('id,name').eq('role','supplier').order('name'),sb.from('withdrawal_availability').select('*'),sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),sb.from('responses').select('id,supplier_id,request_id,qty,rate,status')]);
+ var z=await Promise.all([sb.from('profiles').select('id,name').eq('role','supplier').order('name'),sb.from('withdrawal_availability').select('*'),sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),sb.from('supplier_earnings_ledger').select('supplier_id,total,paid_amount,status')]);
  if(z.some(function(x){return x.error}))return;
- var prof=z[0].data,av=z[1].data,wr=z[2].data,resp=z[3].data,ids=[...new Set(resp.filter(function(x){return x.status==='collected'}).map(function(x){return x.request_id}))],rq=[];
- if(ids.length){var q=await sb.from('requests').select('id,rate').in('id',ids);rq=q.data||[]}
- var rates=new Map(rq.map(function(x){return [x.id,Number(x.rate||0)]})),bal={};
- resp.forEach(function(x){if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Number(x.qty||0)*Number(x.rate!=null?x.rate:(rates.get(x.request_id)||0))});
+ var prof=z[0].data,av=z[1].data,wr=z[2].data,ledger=z[3].data,bal={};
+ ledger.forEach(function(x){if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0));}
  wr.forEach(function(x){bal[x.supplier_id]=(bal[x.supplier_id]||0)-Number(x.amount||0)});
  var am=new Map(av.map(function(x){return [x.supplier_id,x]}));
  E('e8PayAvail').innerHTML=prof.map(function(p){
@@ -1689,6 +1687,7 @@ async function loadSolo(){
  if(!adminReady()||!E('e8SoloList'))return;
  var sid=E('dmS')?.value||E('e8SoloSup')?.value;if(!sid){E('e8SoloList').innerHTML='<div class="empty">Select a supplier.</div>';return}
  if(E('e8SoloSup'))E('e8SoloSup').value=sid;
+ var ps=R.profs||[],sel=E('e8SoloSup');if(sel&&ps.length){var old=sel.value;sel.innerHTML=ps.map(function(p){return '<option value="'+p.id+'">'+escX(p.name)+'</option>'}).join('');sel.value=sid||old||ps[0].id;}
  var q=await sb.from('solo_tasks').select('*,solo_task_items(*)').eq('supplier_id',sid).order('created_at',{ascending:false});if(q.error){E('e8SoloList').textContent=q.error.message;return}
  E('e8SoloList').innerHTML=(q.data||[]).map(function(t){return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:10px"><b>'+escX(t.title)+'</b><span class="tag '+(t.status==='approved'||t.status==='completed'?'t-received':t.status==='denied'?'t-x':'t-pending')+'">'+escX(t.status.toUpperCase())+'</span></div><small style="color:var(--mu)">'+new Date(t.created_at).toLocaleString()+(t.deadline?' · Due '+new Date(t.deadline).toLocaleString():'')+'</small><p style="margin:7px 0">'+escX(t.instructions||'')+'</p>'+((t.solo_task_items||[]).map(function(i){return '<div style="padding:4px 0;border-bottom:1px solid var(--line)">'+escX(i.item_name)+' · requested '+i.quantity+' · submitted '+i.submitted_quantity+' @ '+money(i.rate)+'</div>'}).join(''))+(t.correction_message?'<div style="color:var(--am);margin-top:7px">Correction: '+escX(t.correction_message)+'</div>':'')+'<div style="display:flex;gap:6px;margin-top:8px">'+(t.status==='submitted'||t.status==='needs_correction'?'<button class="sm" data-tcorrection="'+t.id+'">Request Correction</button><button class="btn" data-tapprove="'+t.id+'">Approve &amp; Collect</button><button class="sm" data-tdeny="'+t.id+'">Deny</button>':'')+(t.status==='approved'?'<button class="sm" data-tcomplete="'+t.id+'">Mark Completed</button>':'')+'</div></div>'}).join('')||'<div class="empty">No solo tasks for this supplier.</div>';
 }
@@ -1705,7 +1704,7 @@ E('e8TargetedListCreate')?.addEventListener('click',async function(){
  var x=await sb.rpc('create_buying_list',{p_title:title,p_deadline:iso,p_items:rows,p_supplier_id:sid});adminNotice(x.error?x.error.message:'Supplier-only Buying List created.');rqLoad()
 });
 E('e8SoloSup')?.addEventListener('change',loadSolo);
-E('dmS')?.addEventListener('change',loadSolo);
+E('dmS')?.addEventListener('change',function(){if(E('e8SoloSup'))E('e8SoloSup').value=E('dmS').value;loadSolo()});
 
 // Keep availability/payments on ledger too.
 var oldAdminPay=typeof loadPayAdmin==='function'?loadPayAdmin:null;
