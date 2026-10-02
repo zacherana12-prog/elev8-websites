@@ -145,7 +145,16 @@ body{background:
 <style id="e8-typography">
 body,button,input,select,textarea{font-family:'Nunito Sans',system-ui,sans-serif!important}
 h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
-</style><style id="e8-payments-ui">#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style></head><body><div class="box">
+</style><style id="e8-payments-ui">#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style><style id="e8-performance-refine">
+.stat{padding:11px 13px!important;border-top:2px solid var(--c,var(--cy))!important;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))!important;min-height:82px!important}
+.stat small{font-family:'Nunito Sans',system-ui,sans-serif!important;font-size:10px!important;font-weight:800!important;letter-spacing:.07em!important;color:var(--mu)!important}
+.stat b{font-family:'Nunito',system-ui,sans-serif!important;font-size:21px!important;font-weight:800!important;letter-spacing:-.025em!important;line-height:1.05!important;margin-top:7px!important}
+.stat[style*="--c:var(--cy)"]{background:linear-gradient(135deg,rgba(55,228,255,.11),rgba(55,228,255,.025))!important}
+.stat[style*="--c:var(--gr)"]{background:linear-gradient(135deg,rgba(114,240,168,.11),rgba(114,240,168,.025))!important}
+.stat[style*="--c:var(--am)"]{background:linear-gradient(135deg,rgba(255,216,107,.11),rgba(255,216,107,.025))!important}
+.stat[style*="--c:var(--rd)"]{background:linear-gradient(135deg,rgba(255,139,158,.11),rgba(255,139,158,.025))!important}
+.stat[style*="--c:var(--bl)"],.stat[style*="--c:var(--pu)"],.stat[style*="--c:var(--pk)"]{background:linear-gradient(135deg,rgba(184,184,189,.09),rgba(184,184,189,.02))!important}
+</style></head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
 <label>Account number<input name="pay_number" inputmode="numeric" maxlength="34" pattern="[0-9][0-9 \-]*" title="Numbers only" autocomplete="off"></label>
