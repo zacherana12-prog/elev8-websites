@@ -516,16 +516,6 @@ Charles:
         <button class="btn">Add item</button>
       </form>
     </div>
-    <div class="card">
-      <h3>Supplier profile</h3>
-      <form id="fProf">
-        <label>Supplier Name<input name="name" required></label>
-        <label>Payment Method<input name="method"></label>
-        <label>Payment Details<input name="details"></label>
-        <label>Notes<input name="notes"></label>
-        <button class="btn">Save supplier</button>
-      </form>
-    </div>
   </div>
 </details>
 <div id="e8LegacyReportDom" hidden>
@@ -573,7 +563,7 @@ Charles:
 const RATE=59.5,DAY=864e5,K='elev8_tracker_v1',ST=['PENDING DELIVERY','DELIVERED / PENDING PAYMENT','COMPLETED','CANCELLED / REFUNDED','UNLISTED','LISTED','SOLD','AVAILABLE'];
 let S={items:[],ents:[],profs:[],vault:[]},shown={};
 let RP={pay:[],profs:[]};
-/* Supplier profiles: saved profiles + registered suppliers (live payment details), merged by name so nothing is duplicated */
+/* Supplier roster: registered Auth users are the canonical supplier identities; local legacy profiles are display-only. */
 function profRender(){
  const low=n=>String(n).trim().toLowerCase(),own=n=>S.ents.filter(e=>low(e.sup)===low(n)).reduce((t,e)=>t+owed(e),0),
   pay=id=>RP.pay.find(x=>x.supplier_id===id),live=n=>{const q=RP.profs.find(x=>low(x.name)===low(n));return q?pay(q.id):null},
@@ -630,9 +620,14 @@ function renderSup(){
  $('tEnt').innerHTML=S.ents.length?S.ents.slice().reverse().map(e=>`<tr data-r="${e.id}"><td>${inp('sup',e,e.sup,'text','110px')}</td><td>${inp('qty',e,e.qty,'number','64px')}</td><td>${inp('item',e,e.item,'text','150px')}</td><td>${inp('tier',e,e.tier||'','text','80px')}</td><td>${inp('total',e,r2(e.qty*e.cost),'number','100px')}</td><td>${inp('unit',e,r2(e.cost),'number','90px')}</td>
  <td><select data-pay="${e.id}">${['PENDING','PARTIALLY PAID','PAID'].map(s=>`<option${s===e.pay?' selected':''}>${s}</option>`).join('')}</select></td>
  <td>${e.pay==='PARTIALLY PAID'?`<input type="number" step="0.01" value="${e.paid||0}" data-paid="${e.id}" style="width:100px;padding:6px">`:php(paidOf(e))}</td><td class="o ${owed(e)?'neg':'pos'}">${php(owed(e))}</td><td>${inp('date',e,e.date||'','date','130px')}</td><td><button class="sm" data-de="${e.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">No supplier items yet.</td></tr>';
- $('tProf').innerHTML=S.profs.length?S.profs.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.method)}</td><td>${esc(p.details)}</td><td>${esc(p.notes)}</td><td>${php(S.ents.filter(e=>e.sup.toLowerCase()===p.name.toLowerCase()).reduce((t,e)=>t+owed(e),0))}</td><td><button class="sm" data-dp="${p.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">No supplier profiles yet.</td></tr>';
+ $('tProf').innerHTML=S.profs.length?S.profs.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.method)}</td><td>${esc(p.details)}</td><td>${esc(p.notes)}</td><td>${php(S.ents.filter(e=>e.sup.toLowerCase()===p.name.toLowerCase()).reduce((t,e)=>t+owed(e),0))}</td><td><button class="sm" data-dp="${p.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">No local supplier profiles. Registered suppliers are synchronized automatically.</td></tr>';
  profRender();
- $('supl').innerHTML=[...new Set([...S.profs.map(p=>p.name),...S.ents.map(e=>e.sup)])].map(n=>`<option value="${esc(n)}">`).join('');
+ const registered=RP.profs.map(p=>p.name).filter(Boolean),local=[...S.profs.map(p=>p.name),...S.ents.map(e=>e.sup)].filter(Boolean);
+ const names=[...new Map([...registered,...local].map(n=>[String(n).trim().toLowerCase(),String(n).trim()])).values()].sort((a,b)=>a.localeCompare(b));
+ const oldDef=$('pDef')?.value||'',oldSup=$('fEnt')?.elements?.sup?.value||'';
+ $('supl').innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
+ if($('pDef')&&oldDef) $('pDef').value=oldDef;
+ if($('fEnt')?.elements?.sup&&oldSup) $('fEnt').elements.sup.value=oldSup;
 }
 const TIER=/(^|\s)(\d+(?:\.\d+)?)(ms|b|m|k)(\+?)(?=\s|$)/i;
 function parseStock(txt,def){
@@ -700,7 +695,6 @@ function renderQty(){
  S.items.forEach(i=>{const k=((i.name||'')+'|'+(i.ms||'')).trim().toLowerCase(),o=m[k]||(m[k]={n:i.name+(i.ms?' '+i.ms:''),t:0,l:0,s:0,d:0,a:0,c:0}),q=+i.qty||1;o.t+=q;o[B(i)]+=q});
  const rows=Object.values(m),T={t:0,l:0,s:0,d:0,a:0,c:0};rows.forEach(r=>{for(const k in T)T[k]+=r[k]});const hc=!T.c,row=(n,r,b)=>`<tr><td>${b?'<b>'+n+'</b>':esc(n)}</td><td>${r.t}</td><td>${r.l}</td><td>${r.s}</td><td>${r.d}</td><td class="pos">${r.a}</td><td${hc?' hidden':''}>${r.c}</td></tr>`;
  $('qCh').hidden=hc;$('tQty').innerHTML=rows.length?rows.map(r=>row(r.n,r)).join('')+row('All items',T,1):'<tr><td colspan="6" class="empty">No items yet.</td></tr>'}
-$('fProf').onsubmit=e=>{e.preventDefault();S.profs.push({id:uid(),...fd(e.target)});save();e.target.reset();renderAll()};
 $('fEnt').onsubmit=e=>{e.preventDefault();const d=fd(e.target);S.ents.push({id:uid(),sup:d.sup,item:d.item,qty:+d.qty||1,cost:+d.cost,date:d.date||today(),pay:d.pay,paid:+d.paid||0});save();e.target.reset();renderAll()};
 $('fVault').onsubmit=e=>{e.preventDefault();S.vault.push({id:uid(),...fd(e.target)});save();e.target.reset();renderAll()};
 document.addEventListener('change',e=>{const t=e.target,g=(k,a)=>a.find(x=>x.id===t.dataset[k]);
