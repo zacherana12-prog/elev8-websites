@@ -498,7 +498,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 Charles:
 5x 1B Ketupat 300"></textarea>
       <div style="display:flex;gap:10px;align-items:end;margin-top:10px;flex-wrap:wrap">
-        <label style="flex:1;min-width:200px">Supplier profile<input id="pDef" list="supl" required placeholder="Choose supplier profile"></label>
+        <label style="flex:1;min-width:200px">Supplier profile<select id="pDef" required><option value="">Choose supplier profile</option></select></label>
         <button class="btn" id="pBtn" type="button">Add pasted stock</button>
       </div>
       <div id="pMsg" style="margin-top:10px;font-size:12px;color:var(--mu)">The number at the end of each line is the total cost for that line. Unit cost is calculated automatically.</div>
@@ -506,7 +506,7 @@ Charles:
     <div class="card">
       <h3>Add supplier item</h3>
       <form id="fEnt">
-        <label>Supplier<input name="sup" list="supl" required></label>
+        <label>Supplier<select name="sup" required><option value="">Choose supplier</option></select></label>
         <label>Item<input name="item" required></label>
         <label>Quantity<input name="qty" type="number" min="1" value="1"></label>
         <label>Cost (each) PHP<input name="cost" type="number" step="0.01" min="0" required></label>
@@ -648,12 +648,17 @@ function renderSup(){
  <td>${e.pay==='PARTIALLY PAID'?`<input type="number" step="0.01" value="${e.paid||0}" data-paid="${e.id}" style="width:100px;padding:6px">`:php(paidOf(e))}</td><td class="o ${owed(e)?'neg':'pos'}">${php(owed(e))}</td><td>${inp('date',e,e.date||'','date','130px')}</td><td><button class="sm" data-de="${e.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">No supplier items yet.</td></tr>';
  $('tProf').innerHTML=S.profs.length?S.profs.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.method)}</td><td>${esc(p.details)}</td><td>${esc(p.notes)}</td><td>${php(S.ents.filter(e=>e.sup.toLowerCase()===p.name.toLowerCase()).reduce((t,e)=>t+owed(e),0))}</td><td><button class="sm" data-dp="${p.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">No local supplier profiles. Registered suppliers are synchronized automatically.</td></tr>';
  profRender();
- const registered=RP.profs.map(p=>p.name).filter(Boolean),local=[...S.profs.map(p=>p.name),...S.ents.map(e=>e.sup)].filter(Boolean);
- const names=[...new Map([...registered,...local].map(n=>[String(n).trim().toLowerCase(),String(n).trim()])).values()].sort((a,b)=>a.localeCompare(b));
+ const registered=RP.profs.filter(p=>p.role==='supplier' || !p.role).map(p=>({id:p.id,name:String(p.name||'').trim()})).filter(p=>p.name);
+ const local=[...S.profs.map(p=>({id:'local:'+p.id,name:String(p.name||'').trim()})),...S.ents.map(e=>({id:'local:'+e.sup,name:String(e.sup||'').trim()})).filter(p=>p.name)];
+ const merged=new Map();
+ [...registered,...local].forEach(p=>{const k=p.name.toLowerCase();if(!merged.has(k)||String(p.id).indexOf('local:')!==0)merged.set(k,p)});
+ const suppliers=[...merged.values()].sort((a,b)=>a.name.localeCompare(b.name));
  const oldDef=$('pDef')?.value||'',oldSup=$('fEnt')?.elements?.sup?.value||'';
- $('supl').innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
- if($('pDef')&&oldDef) $('pDef').value=oldDef;
- if($('fEnt')?.elements?.sup&&oldSup) $('fEnt').elements.sup.value=oldSup;
+ const opts='<option value="">Choose supplier</option>'+suppliers.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');
+ if($('pDef')){$('pDef').innerHTML=opts;$('pDef').value=oldDef;}
+ const supSel=$('fEnt')?.elements?.sup;
+ if(supSel){supSel.innerHTML=opts;supSel.value=oldSup;}
+
 }
 const TIER=/(^|\s)(\d+(?:\.\d+)?)(ms|b|m|k)(\+?)(?=\s|$)/i;
 function parseStock(txt,def){
