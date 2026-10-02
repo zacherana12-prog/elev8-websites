@@ -439,7 +439,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 @media(max-width:620px){.e8-management-grid,.e8-wallet-stats{grid-template-columns:1fr}.e8-wallet-action #e8WForm{grid-template-columns:1fr}}
 </style></head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
-<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
+<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="stock">Supplier Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
 <main>
 <section id="dash" class="view on"><h2>Total Performance</h2><div class="grid" id="stats"></div></section>
 
@@ -451,7 +451,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 <label>Status<select name="status"></select></label><label>Date Added<input name="added" type="date"></label>
 <label>Delivery Date<input name="delivery" type="datetime-local"></label><button class="btn">Add item</button><button class="sm" type="button" id="iMore" style="padding:10px">Add More</button><button class="btn" type="button" id="iAll" hidden>Save all</button></form><div id="iPend" style="margin-top:10px"></div><p style="color:var(--mu);font-size:12px;margin:10px 0 0">Cost and Selling Price are totals for the whole quantity. When only part of the quantity changes status, they are split in proportion.</p></div>
 <div class="card wrap"><h3>Quantity breakdown</h3><table style="min-width:520px"><thead><tr><th>Item</th><th>Total</th><th>Listed</th><th>Sold</th><th>Delivered</th><th>Available</th><th id="qCh" hidden>Cancelled</th></tr></thead><tbody id="tQty"></tbody></table><div style="color:var(--mu);font-size:12px;padding-top:8px">Sold = Sold + Pending Delivery &middot; Delivered = Delivered + Completed &middot; Available = Available + Unlisted</div></div>
-<div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div></section>
+<div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div><div class="card wrap" id="e8SupplierInventoryPanel"><div class="e8-section-head"><h3>Supplier-linked inventory</h3><span>Live listed supplier stock</span></div><div style="overflow:auto"><table class="e8-ledger-table" style="min-width:980px"><thead><tr><th>Supplier</th><th>Item</th><th>On Hand</th><th>Sold</th><th>Remaining</th><th>Status</th><th>Cost</th><th>Selling</th><th>Account</th><th></th></tr></thead><tbody id="e8SupplierInventoryRows"></tbody></table></div></div></section>
 
 <section id="payments" class="view">
 <h2>Payments</h2><div id="e8PayMsg" style="color:var(--cy);font-size:12px;min-height:18px;margin-bottom:8px"></div>
@@ -518,6 +518,32 @@ Charles:
     </div>
   </div>
 </details>
+<section id="stock" class="view">
+<h2>Supplier Stock &amp; Inventory</h2>
+<div class="e8-report-toolbar">
+  <div><strong>Unified supplier stock</strong><span>Buying Lists + Custom Submissions → Approval → On Hand → Listed → Sold.</span></div>
+  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+    <label>Supplier<select id="e8StockSupplier"><option value="">All suppliers</option></select></label>
+    <label>Source<select id="e8StockSource"><option value="">All sources</option><option value="buying_list">Buying List</option><option value="custom_submission">Custom Submission</option></select></label>
+    <label>Status<select id="e8StockStatus"><option value="">All statuses</option><option value="submitted">Submitted</option><option value="approved">Approved</option><option value="collected">On Hand</option><option value="listed">Listed</option><option value="partially_sold">Partially Sold</option><option value="sold">Sold</option><option value="cancelled">Cancelled</option></select></label>
+    <button class="sm" id="e8StockSync" type="button">Sync now</button>
+  </div>
+</div>
+<div class="grid" id="e8StockStats"></div>
+<div class="card wrap">
+  <div class="e8-section-head"><h3>Supplier stock records</h3><span id="e8StockMeta"></span></div>
+  <div style="overflow:auto">
+    <table class="e8-ledger-table" style="min-width:1540px">
+      <thead><tr>
+        <th>Supplier</th><th>Source</th><th>Item</th><th>Submitted</th><th>Approved</th><th>Collected</th><th>On Hand</th><th>Sold</th><th>Status</th><th>Cost/Unit</th><th>Listing Name</th><th>Selling USD</th><th>Inventory Account</th><th>M/s</th><th>Notes</th><th></th>
+      </tr></thead>
+      <tbody id="e8StockRows"></tbody>
+    </table>
+  </div>
+</div>
+<div id="e8StockMsg" style="min-height:20px;color:var(--cy);font-size:12px"></div>
+</section>
+
 <div id="e8LegacyReportDom" hidden>
   <div id="supStats"></div>
   <table><tbody id="tSum"></tbody><tbody id="tEnt"></tbody><tbody id="tProf"></tbody></table>
@@ -807,6 +833,7 @@ async function rqLoad(){
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  $('rqWho').textContent='Signed in as '+session.user.email;R.me=session.user.id;rm('');
  await sb.rpc('sync_registered_suppliers');
+ await sb.rpc('sync_supplier_stock');
  await sb.rpc('close_expired_lists');
  const q=await Promise.all([sb.from('requests').select('*').order('created_at'),sb.from('responses').select('*'),sb.from('profiles').select('*').eq('role','supplier').order('name'),sb.from('messages').select('*').order('created_at'),sb.from('dms').select('*').order('created_at'),sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(50),sb.from('supplier_payment').select('*'),sb.from('payment_edit_requests').select('*').order('created_at',{ascending:false}),sb.from('updates').select('*').order('created_at',{ascending:false}),sb.from('buying_lists').select('*').order('created_at',{ascending:false})]);
  const bad=q.find(x=>x.error);if(bad){rm('Could not load: '+bad.error.message);return}
@@ -1826,7 +1853,7 @@ window.addEventListener('load',function(){setTimeout(loadSupplierReportAdmin,140
 </script><script id="e8-live-sync">
 (function(){
 'use strict';
-const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests','avatars'];
+const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','supplier_stock_items','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests','avatars'];
 let ch=null,timer=0,started=false;
 function refresh(){clearTimeout(timer);timer=setTimeout(function(){
  try{if(typeof rqLoad==='function'&&document.getElementById('rqApp')&&!document.getElementById('rqApp').hidden)rqLoad()}catch(e){}
@@ -1841,4 +1868,90 @@ function start(){if(started||typeof sb==='undefined'||!sb)return;started=true;ch
 setInterval(start,1000);
 window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
 })();
-</script></body></html>
+</script><script id="e8-supplier-stock-manager">
+(function(){
+'use strict';
+var E=id=>document.getElementById(id), stockCache=[], stockProfiles=[];
+function escS(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
+function moneyS(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function sourceS(v){return v==='buying_list'?'Buying List':'Custom Submission'}
+function labelS(v){return ({submitted:'SUBMITTED',approved:'APPROVED',collected:'ON HAND',listed:'LISTED',partially_sold:'PARTIALLY SOLD',sold:'SOLD',cancelled:'CANCELLED'}[v]||String(v||'').toUpperCase())}
+function tagS(v){var cls=v==='sold'?'t-paid':v==='listed'||v==='collected'||v==='approved'?'t-received':v==='cancelled'?'t-x':v==='partially_sold'?'t-pending':'t-pending';return '<span class="tag '+cls+'">'+labelS(v)+'</span>'}
+function statS(l,v,c){return '<div class="stat" style="--c:'+c+'"><small>'+l+'</small><b>'+v+'</b></div>'}
+function populateSuppliers(){
+ var s=E('e8StockSupplier'),old=s?s.value:'',names=stockProfiles.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+ if(s){s.innerHTML='<option value="">All suppliers</option>'+names.map(p=>'<option value="'+p.id+'">'+escS(p.name)+'</option>').join('');if(names.some(p=>p.id===old))s.value=old}
+}
+async function loadSupplierStock(){
+ if(typeof sb==='undefined'||!sb||!R||!R.me)return;
+ var sync=await sb.rpc('sync_supplier_stock');
+ if(sync.error){E('e8StockMsg').textContent=sync.error.message;return}
+ var q=await Promise.all([
+   sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false}),
+   sb.from('profiles').select('id,name').eq('role','supplier').order('name')
+ ]);
+ if(q.some(x=>x.error)){E('e8StockMsg').textContent=(q.find(x=>x.error)||{}).error?.message||'Could not load supplier stock.';return}
+ stockCache=q[0].data||[];stockProfiles=q[1].data||[];populateSuppliers();renderSupplierStock();renderSupplierInventory();
+}
+function filteredStock(){
+ var sid=E('e8StockSupplier')?.value||'',src=E('e8StockSource')?.value||'',st=E('e8StockStatus')?.value||'';
+ return stockCache.filter(x=>(!sid||x.supplier_id===sid)&&(!src||x.source_type===src)&&(!st||x.status===st));
+}
+function renderSupplierStock(){
+ var rows=filteredStock(),nm=new Map(stockProfiles.map(p=>[p.id,p.name]));
+ var submitted=rows.reduce((t,x)=>t+Number(x.submitted_quantity||0),0),approved=rows.reduce((t,x)=>t+Number(x.approved_quantity||0),0),collected=rows.reduce((t,x)=>t+Number(x.collected_quantity||0),0),onhand=rows.reduce((t,x)=>t+Number(x.on_hand_quantity||0),0),sold=rows.reduce((t,x)=>t+Number(x.sold_quantity||0),0);
+ E('e8StockStats').innerHTML=statS('SUBMITTED',submitted,'var(--cy)')+statS('APPROVED',approved,'var(--pu)')+statS('ON HAND',onhand,'var(--gr)')+statS('SOLD',sold,'var(--am)')+statS('REMAINING',onhand,'var(--bl)');
+ E('e8StockMeta').textContent=rows.length+' record'+(rows.length===1?'':'s');
+ E('e8StockRows').innerHTML=rows.map(x=>{
+   var canList=x.collected_quantity>0;
+   var status=x.status;
+   return '<tr data-stock-row="'+x.id+'">'+
+   '<td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td>'+
+   '<td>'+escS(sourceS(x.source_type))+'</td>'+
+   '<td>'+escS(x.item_name)+'</td>'+
+   '<td>'+x.submitted_quantity+'</td><td>'+x.approved_quantity+'</td>'+
+   '<td><input type="number" min="0" max="'+x.approved_quantity+'" value="'+x.collected_quantity+'" data-st-f="collected_quantity" style="width:78px"></td>'+
+   '<td>'+x.on_hand_quantity+'</td>'+
+   '<td><input type="number" min="0" max="'+x.collected_quantity+'" value="'+x.sold_quantity+'" data-st-f="sold_quantity" style="width:72px"></td>'+
+   '<td><select data-st-f="status" style="width:126px">'+['submitted','approved','collected','listed','partially_sold','sold','cancelled'].map(v=>'<option value="'+v+'" '+(v===status?'selected':'')+'>'+labelS(v)+'</option>').join('')+'</select></td>'+
+   '<td>'+moneyS(x.unit_cost)+'</td>'+
+   '<td><input value="'+escS(x.listing_item_name||x.item_name)+'" data-st-f="listing_item_name" style="width:170px" '+(canList?'':'disabled')+'></td>'+
+   '<td><input type="number" min="0" step="0.01" value="'+(x.selling_price_usd??'')+'" data-st-f="selling_price_usd" style="width:105px" '+(canList?'':'disabled')+'></td>'+
+   '<td><input value="'+escS(x.inventory_account||'')+'" data-st-f="inventory_account" style="width:150px" '+(canList?'':'disabled')+'></td>'+
+   '<td><input value="'+escS(x.listing_ms||'')+'" data-st-f="listing_ms" style="width:100px" '+(canList?'':'disabled')+'></td>'+
+   '<td><input value="'+escS(x.listing_notes||'')+'" data-st-f="listing_notes" style="width:170px" '+(canList?'':'disabled')+'></td>'+
+   '<td><button class="sm" data-st-save="'+x.id+'">Save</button></td></tr>'
+ }).join('')||'<tr><td colspan="16" class="empty">No supplier stock records match the current filters.</td></tr>';
+}
+async function saveStock(id){
+ var tr=document.querySelector('[data-stock-row="'+id+'"]');if(!tr)return;
+ var val=k=>tr.querySelector('[data-st-f="'+k+'"]')?.value;
+ var status=val('status'),cq=Math.max(0,Math.floor(Number(val('collected_quantity'))||0)),sq=Math.max(0,Math.floor(Number(val('sold_quantity'))||0));
+ if(sq>cq){E('e8StockMsg').textContent='Sold quantity cannot exceed collected quantity.';return}
+ var r=await sb.rpc('update_supplier_stock_item',{
+   p_stock_id:id,p_status:status,p_collected_quantity:cq,p_sold_quantity:sq,
+   p_listing_item_name:val('listing_item_name')||null,
+   p_selling_price_usd:val('selling_price_usd')===''?null:Number(val('selling_price_usd')),
+   p_inventory_account:val('inventory_account')||null,p_listing_ms:val('listing_ms')||null,p_listing_notes:val('listing_notes')||null
+ });
+ E('e8StockMsg').textContent=r.error?r.error.message:'Supplier stock updated and synced.';
+ if(!r.error){loadSupplierStock()}
+}
+function renderSupplierInventory(){
+ var rows=stockCache.filter(x=>['listed','partially_sold','sold'].includes(x.status)&&x.collected_quantity>0),nm=new Map(stockProfiles.map(p=>[p.id,p.name]));
+ E('e8SupplierInventoryRows').innerHTML=rows.map(x=>'<tr><td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td><td>'+escS(x.listing_item_name||x.item_name)+'</td><td>'+x.collected_quantity+'</td><td>'+x.sold_quantity+'</td><td>'+x.on_hand_quantity+'</td><td>'+tagS(x.status)+'</td><td>'+moneyS(x.unit_cost)+'</td><td>'+((x.selling_price_usd==null)?'—':'+Number(x.selling_price_usd).toFixed(2))+'</td><td>'+escS(x.inventory_account||'—')+'</td><td><button class="sm" data-st-jump="'+x.id+'">Manage</button></td></tr>').join('')||'<tr><td colspan="10" class="empty">No supplier stock is currently listed.</td></tr>';
+}
+E('e8StockSupplier')?.addEventListener('change',renderSupplierStock);
+E('e8StockSource')?.addEventListener('change',renderSupplierStock);
+E('e8StockStatus')?.addEventListener('change',renderSupplierStock);
+E('e8StockSync')?.addEventListener('click',loadSupplierStock);
+document.addEventListener('click',function(ev){
+ var d=ev.target.dataset||{};
+ if(d.stSave)saveStock(d.stSave);
+ if(d.stJump){var b=document.querySelector('[data-v="stock"]');if(b)b.click();setTimeout(function(){var tr=document.querySelector('[data-stock-row="'+d.stJump+'"]');tr?.scrollIntoView({behavior:'smooth',block:'center'})},80)}
+});
+window.e8LoadSupplierStock=loadSupplierStock;
+addEventListener('load',function(){setTimeout(loadSupplierStock,1900);setInterval(function(){if(E('stock')&&!E('stock').hidden)loadSupplierStock()},8000)});
+})();
+</script>
+</body></html>
