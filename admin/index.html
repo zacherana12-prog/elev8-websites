@@ -792,8 +792,8 @@ document.addEventListener('click',e=>{if(e.target.dataset&&e.target.dataset.brm)
 $('fReq').onsubmit=async e=>{e.preventDefault();const f=e.target,v=n=>f.elements[n].value,dl=new Date(v('deadline')),
  items=[...f.querySelectorAll('.brow')].map(r=>({item:r.querySelector('[name=item]').value.trim(),qty:Math.max(0,Math.floor(+r.querySelector('[name=qty]').value)||0),rate:Math.max(0,+r.querySelector('[name=rate]').value||0)}));
  if(isNaN(dl)||dl<=Date.now()){rm('Pick a deadline in the future.');return}
- const{error}=await sb.rpc('create_buying_list',{p_title:v('title'),p_deadline:dl.toISOString(),p_items:items});
- if(error)rqErr(error);else{f.reset();$('bRows').innerHTML=bRow(0);rm('Buying List created. Suppliers can see it now.')}rqLoad()};
+ const{data:listId,error}=await sb.rpc('create_buying_list',{p_title:v('title'),p_deadline:dl.toISOString(),p_items:items,p_supplier_id:null});
+ if(error)rqErr(error);else{f.reset();$('bRows').innerHTML=bRow(0);rm('Buying List created. All suppliers can see it now.');if(listId)rm('Buying List created. All suppliers can see it now.')}rqLoad()};
 $('fAnn').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body||!R.me)return;
  const{error}=await sb.from('announcements').insert({body});if(error)rqErr(error);else e.target.reset();rqLoad()};
 document.addEventListener('click',async e=>{const id=e.target.dataset&&e.target.dataset.ad;if(!id||!confirm('Delete this announcement?'))return;
