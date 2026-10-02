@@ -168,7 +168,7 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 
 <section id="vReq"><div class="card wrap"><h3>Buying</h3><div id="rMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div>
 <table><thead><tr><th>Item</th><th>Needed</th><th>Rate</th><th>Total Available</th><th>Still Needed</th><th>My Available Qty</th><th>My Status</th></tr></thead><tbody id="tReq"></tbody></table>
-<p style="color:var(--mu);font-size:12px;margin:10px 0 0">Total Available is the combined stock from all suppliers. Your quantity stays Pending until the admin marks it Collected. You can submit or change quantities only while a Buying List is Active and before its deadline.</p></div></section>
+<p style="color:var(--mu);font-size:12px;margin:10px 0 0">Total Available is the combined stock from all suppliers. Your quantity stays Pending until the admin marks it Collected. You can submit or change quantities only while a Buying List is Active and before its deadline.</p></div><div class="card" id="e8CustomBox"><h3>Custom Submission</h3><p style="color:var(--mu);font-size:12px;margin-top:0">For items not included in a Buying List or stock request. Your submission is reviewed by Admin before it affects your balance.</p><div id="e8CustomForm"></div><div id="e8CustomList" style="margin-top:10px"></div></div><div class="card" id="e8SoloBox"><h3>My Solo Task</h3><div id="e8SoloList"></div></div></section>
 
 <section id="vRep" hidden><div class="grid" id="stats"></div><div class="card wrap"><h3>My collected stock &amp; payments</h3>
 <table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Payment</th></tr></thead><tbody id="tRep"></tbody></table></div></section>
@@ -299,5 +299,70 @@ async function loadPaySupplier(){
 document.addEventListener('click',async function(e){if(e.target.id!=='e8WSubmit')return;var amount=Number(E('e8WAmount').value);e.target.disabled=true;E('e8WMsg').textContent='Submitting withdrawal…';var r=await sb.rpc('request_withdrawal',{p_amount:amount});E('e8WMsg').textContent=r.error?r.error.message:'Withdrawal ticket submitted to admin.';loadPaySupplier()});
 document.querySelector('[data-t="vWithdraw"]')?.addEventListener('click',function(){setTimeout(loadPaySupplier,0)});
 window.addEventListener('load',function(){setTimeout(loadPaySupplier,1800);setInterval(function(){if(E('vWithdraw')&&!E('vWithdraw').hidden)loadPaySupplier()},8000)});
+})();
+</script><script id="e8-supplier-workflow">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function M(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function X(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
+var customEdit=null;
+function customRow(item,qty,rate){
+ var r=document.createElement('div');r.className='e8-custom-row';r.style.cssText='display:grid;grid-template-columns:1.4fr .7fr .8fr auto;gap:7px;align-items:end;margin-bottom:7px';
+ r.innerHTML='<label>Item Name<input class="e8-ci" required value="'+X(item||'')+'"></label><label>Quantity<input class="e8-cq" type="number" min="1" required value="'+(qty||1)+'"></label><label>Rate PHP<input class="e8-cr" type="number" min="0" step="0.01" required value="'+(rate||0)+'"></label><button class="sm" type="button">Remove</button>';
+ r.querySelector('button').onclick=function(){r.remove()};return r
+}
+function renderCustomForm(data){
+ customEdit=data||null;
+ E('e8CustomForm').innerHTML='<div style="display:grid;gap:8px"><label>Supplier status<select id="e8CS"><option value="on_hold">On Hold</option><option value="collected">Collected</option></select></label><div id="e8CRows"></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="sm" id="e8CAdd" type="button">Add item</button><button class="btn" id="e8CSubmit" type="button">'+(data?'Correct &amp; Resubmit':'Submit Custom Task')+'</button>'+(data?'<button class="sm" id="e8CCancel" type="button">Cancel correction</button>':'')+'</div><div id="e8CMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div></div>';
+ E('e8CS').value=data?data.supplier_status:'on_hold';
+ var rows=data&&data.custom_submission_items?data.custom_submission_items:[];if(!rows.length)rows=[{}];rows.forEach(function(x){E('e8CRows').appendChild(customRow(x.item_name,x.quantity,x.rate))});
+ E('e8CAdd').onclick=function(){E('e8CRows').appendChild(customRow('',1,0))};
+ E('e8CCancel')?.addEventListener('click',function(){renderCustomForm(null)});
+ E('e8CSubmit').onclick=async function(){
+  var items=[...E('e8CRows').querySelectorAll('.e8-custom-row')].map(function(r){return{item_name:r.querySelector('.e8-ci').value.trim(),quantity:Number(r.querySelector('.e8-cq').value),rate:Number(r.querySelector('.e8-cr').value)}}).filter(function(x){return x.item_name});
+  if(!items.length){E('e8CMsg').textContent='Add at least one item.';return}
+  this.disabled=true;E('e8CMsg').textContent='Submitting…';
+  var result=data?await sb.rpc('resubmit_custom_submission',{p_submission_id:data.id,p_supplier_status:E('e8CS').value,p_items:items}):await sb.rpc('request_custom_submission',{p_supplier_status:E('e8CS').value,p_items:items});
+  E('e8CMsg').textContent=result.error?result.error.message:'Submission sent to Admin for review.';if(!result.error){renderCustomForm(null);loadSupplierWorkflow()}
+ };
+}
+async function loadSupplierWorkflow(){
+ if(typeof sb==='undefined'||!sb||typeof me==='undefined'||!me)return;
+ var q=await Promise.all([
+  sb.from('custom_submissions').select('*,custom_submission_items(*)').eq('supplier_id',me).order('created_at',{ascending:false}),
+  sb.from('solo_tasks').select('*,solo_task_items(*)').eq('supplier_id',me).order('created_at',{ascending:false}),
+  sb.from('supplier_earnings_ledger').select('*').eq('supplier_id',me).order('created_at',{ascending:false})
+ ]);
+ if(q.some(function(x){return x.error}))return;
+ var cs=q[0].data||[],tasks=q[1].data||[],ledger=q[2].data||[];
+ E('e8CustomList').innerHTML=cs.map(function(x){
+  var total=(x.custom_submission_items||[]).reduce(function(t,i){return t+Number(i.quantity||0)*Number(i.rate||0)},0);
+  var badge=x.review_status==='approved'?'t-approved':x.review_status==='denied'?'t-rejected':'t-pending';
+  return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>Submission · '+new Date(x.created_at).toLocaleString()+'</b><span class="tag '+badge+'">'+X(x.review_status.replace('_',' ').toUpperCase())+'</span></div><div style="font-size:12px;color:var(--mu);margin:5px 0">Supplier status: '+X(x.supplier_status)+' · Revision '+x.revision+' · '+M(total)+'</div>'+((x.custom_submission_items||[]).map(function(i){return '<div style="font-size:12px;padding:3px 0">'+X(i.item_name)+' × '+i.quantity+' @ '+M(i.rate)+'</div>'}).join(''))+(x.correction_message?'<div style="margin-top:6px;color:var(--am)">Admin correction: '+X(x.correction_message)+'</div>':'')+(x.review_status==='needs_correction'?'<button class="btn" style="margin-top:7px" data-c-edit="'+x.id+'">Correct &amp; Resubmit</button>':'')+'</div>'
+ }).join('')||'<div class="empty">No custom submissions yet.</div>';
+ E('e8SoloList').innerHTML=tasks.map(function(t){
+  var can=t.status==='assigned'||t.status==='needs_correction';
+  return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+X(t.title)+'</b><span class="tag '+(t.status==='approved'||t.status==='completed'?'t-approved':t.status==='denied'?'t-rejected':'t-pending')+'">'+X(t.status.replace('_',' ').toUpperCase())+'</span></div><small style="color:var(--mu)">'+new Date(t.created_at).toLocaleString()+(t.deadline?' · Due '+new Date(t.deadline).toLocaleString():'')+'</small><p style="margin:7px 0">'+X(t.instructions||'')+'</p>'+((t.solo_task_items||[]).map(function(i){return '<div style="display:grid;grid-template-columns:1fr 80px 100px;gap:7px;align-items:end;margin:5px 0"><span>'+X(i.item_name)+' <small style="color:var(--mu)">requested '+i.quantity+' @ '+M(i.rate)+'</small></span><label>Submit Qty<input type="number" min="0" max="'+i.quantity+'" value="'+i.submitted_quantity+'" data-sqitem="'+i.id+'" '+(can?'':'disabled')+'></label><span></span></div>'}).join(''))+(t.correction_message?'<div style="color:var(--am);margin-top:6px">Admin correction: '+X(t.correction_message)+'</div>':'')+(can?'<button class="btn" style="margin-top:7px" data-s-submit="'+t.id+'">Submit Solo Task</button>':'')+'</div>'
+ }).join('')||'<div class="empty">No solo tasks assigned.</div>';
+
+ var balance=ledger.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0))},0);
+ var earned=ledger.filter(function(x){return ['collected','paid'].includes(x.status)}).reduce(function(t,x){return t+Number(x.total||0)},0);
+ E('stats').innerHTML=stat('ITEMS COLLECTED',ledger.filter(function(x){return x.status!=='cancelled'}).reduce(function(t,x){return t+Number(x.quantity||0)},0),'var(--cy)')+stat('TOTAL VALUE',M(earned),'var(--bl)')+stat('AMOUNT OWED',M(balance),balance?'var(--rd)':'var(--gr)')+stat('PAID',M(ledger.filter(function(x){return x.status==='paid'}).reduce(function(t,x){return t+Number(x.total||0)},0)),'var(--gr)');
+ E('tRep').innerHTML=ledger.map(function(x){return '<tr><td>'+new Date(x.created_at).toLocaleDateString()+'</td><td>'+X(x.item_name)+'</td><td>'+x.quantity+'</td><td>'+M(x.rate)+'</td><td>'+M(x.total)+'</td><td><span class="tag '+(x.status==='paid'?'t-paid':x.status==='collected'?'t-collected':x.status==='pending'?'t-pending':'t-rejected')+'">'+X(x.status.toUpperCase())+'</span></td></tr>'}).join('')||'<tr><td colspan="6" class="empty">No supplier ledger records yet.</td></tr>';
+}
+document.addEventListener('click',async function(e){
+ var d=e.target.dataset||{};
+ if(d.cEdit){
+  var q=await sb.from('custom_submissions').select('*,custom_submission_items(*)').eq('id',d.cEdit).maybeSingle();if(q.data){renderCustomForm(q.data);E('e8CustomForm').scrollIntoView({behavior:'smooth',block:'center'})}
+ }
+ if(d.sSubmit){
+  var rows=[...document.querySelectorAll('[data-sqitem]')],updates=[];rows.forEach(function(i){var t=i.closest('.card');if(t&&t.querySelector('[data-s-submit="'+d.sSubmit+'"]'))updates.push({id:i.dataset.sqitem,submitted_quantity:Number(i.value)||0})});
+  var bad=updates.some(function(x){return x.submitted_quantity<=0});if(bad){alert('Enter a submitted quantity for every item.');return}
+  var ok=true;for(var i=0;i<updates.length;i++){var u=await sb.from('solo_task_items').update({submitted_quantity:updates[i].submitted_quantity}).eq('id',updates[i].id);if(u.error){ok=false;E('rMsg').textContent=u.error.message;break}}
+  if(ok){var z=await sb.rpc('request_solo_task_submission',{p_task_id:d.sSubmit});E('rMsg').textContent=z.error?z.error.message:'Solo task submitted to Admin.';loadSupplierWorkflow()}
+ }
+});
+addEventListener('load',function(){setTimeout(function(){renderCustomForm(null);loadSupplierWorkflow()},2200);setInterval(loadSupplierWorkflow,8000)});
 })();
 </script></body></html>
