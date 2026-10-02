@@ -142,7 +142,10 @@ body{background:
 @media(max-width:760px){body{background-position:center center!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-</head><body><div class="box">
+<style id="e8-typography">
+body,button,input,select,textarea{font-family:'Nunito Sans',system-ui,sans-serif!important}
+h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
+</style></head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
 <label>Account number<input name="pay_number" inputmode="numeric" maxlength="34" pattern="[0-9][0-9 \-]*" title="Numbers only" autocomplete="off"></label>
