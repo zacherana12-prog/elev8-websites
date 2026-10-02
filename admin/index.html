@@ -1978,7 +1978,243 @@ async function saveStock(id){
 }
 function renderSupplierInventory(){
  var rows=stockCache.filter(x=>['listed','partially_sold','sold'].includes(x.status)&&x.collected_quantity>0),nm=new Map(stockProfiles.map(p=>[p.id,p.name]));
- E('e8SupplierInventoryRows').innerHTML=rows.map(x=>'<tr><td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td><td>'+escS(x.listing_item_name||x.item_name)+'</td><td>'+x.collected_quantity+'</td><td>'+x.sold_quantity+'</td><td>'+x.on_hand_quantity+'</td><td>'+tagS(x.status)+'</td><td>'+moneyS(x.unit_cost)+'</td><td>'+((x.selling_price_usd==null)?'—':'+Number(x.selling_price_usd).toFixed(2))+'</td><td>'+escS(x.inventory_account||'—')+'</td><td><button class="sm" data-st-jump="'+x.id+'">Manage</button></td></tr>').join('')||'<tr><td colspan="10" class="empty">No supplier stock is currently listed.</td></tr>';
+ E('e8SupplierInventoryRows').innerHTML=rows.map(x=>'<tr><td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td><td>'+escS(x.listing_item_name||x.item_name)+'</td><td>'+x.collected_quantity+'</td><td>'+x.sold_quantity+'</td><td>'+x.on_hand_quantity+'</td><td>'+tagS(x.status)+'</td><td>'+moneyS(x.unit_cost)+'</td><td>'+((x.selling_price_usd==null)?'—':'+'</td><td>'+escS(x.inventory_account||'—')+'</td><td><button class="sm" data-st-jump="'+x.id+'">Manage</button></td></tr>').join('')||'<tr><td colspan="10" class="empty">No supplier stock is currently listed.</td></tr>';
+}
+E('e8StockSupplier')?.addEventListener('change',renderSupplierStock);
+E('e8StockSource')?.addEventListener('change',renderSupplierStock);
+E('e8StockStatus')?.addEventListener('change',renderSupplierStock);
+E('e8StockSync')?.addEventListener('click',loadSupplierStock);
+document.addEventListener('click',function(ev){
+ var d=ev.target.dataset||{};
+ if(d.stSave)saveStock(d.stSave);
+ if(d.stJump){var b=document.querySelector('[data-v="stock"]');if(b)b.click();setTimeout(function(){var tr=document.querySelector('[data-stock-row="'+d.stJump+'"]');tr?.scrollIntoView({behavior:'smooth',block:'center'})},80)}
+});
+window.e8LoadSupplierStock=loadSupplierStock;
+addEventListener('load',function(){setTimeout(loadSupplierStock,1900);setInterval(function(){if(E('stock')&&!E('stock').hidden)loadSupplierStock()},8000)});
+})();
+</script>
+<script id="e8-unified-admin-core">
+(function(){
+'use strict';
+var E=function(id){return document.getElementById(id)};
+var cfg={
+ usd_php_rate:59.5, marketplace_fee_pct:15, payout_fee_pct:4, refresh_seconds:8,
+ default_inventory_status:'AVAILABLE', dashboard_auto_refresh:true, labels:{}
+};
+var cfgLoaded=false,invBusy=false,invHydrated=false,lastLocalSig='',lastRemoteSig='',dashBusy=false,lastDash=0;
+function esc8(v){return String(v==null?'':v).replace(/[&<>"']/g,function(x){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[x]})}
+function money8(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function ready(){return typeof sb!=='undefined'&&!!sb&&typeof R!=='undefined'&&!!R&&!!R.me}
+
+function labelKey(v){return 'label:'+String(v||'').trim().toLowerCase()}
+function placeholderKey(v){return 'placeholder:'+String(v||'').trim()}
+function firstTextNode(el){for(var i=0;i<el.childNodes.length;i++){if(el.childNodes[i].nodeType===3)return el.childNodes[i]}return null}
+function prepareTargets(){
+ document.querySelectorAll('aside nav button[data-v]').forEach(function(b){if(!b.dataset.e8DefaultLabel)b.dataset.e8DefaultLabel=b.textContent.trim()});
+ document.querySelectorAll('main label:not(#settings label)').forEach(function(l){var t=firstTextNode(l);if(t&&!l.dataset.e8DefaultLabel)l.dataset.e8DefaultLabel=t.nodeValue.trim()});
+ document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){if(!i.dataset.e8DefaultPlaceholder)i.dataset.e8DefaultPlaceholder=i.getAttribute('placeholder')||''});
+}
+function applyLabels(){
+ prepareTargets();
+ var L=cfg.labels||{};
+ document.querySelectorAll('aside nav button[data-v]').forEach(function(b){var d=b.dataset.e8DefaultLabel,k='tab:'+b.dataset.v;if(L[k])b.textContent=L[k];else b.textContent=d});
+ document.querySelectorAll('main label:not(#settings label)').forEach(function(l){var t=firstTextNode(l),d=l.dataset.e8DefaultLabel,k=labelKey(d);if(t)t.nodeValue=L[k]||d});
+ document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){var d=i.dataset.e8DefaultPlaceholder,k=placeholderKey(d);if(d)i.placeholder=L[k]||d});
+ renderCustomizationEditors();
+}
+function renderCustomizationEditors(){
+ var tabs=E('e8TabEditor'),inputs=E('e8InputEditor');if(!tabs||!inputs)return;
+ var L=cfg.labels||{};
+ var seen=new Set(),tabRows=[];
+ document.querySelectorAll('aside nav button[data-v]').forEach(function(b){var k='tab:'+b.dataset.v;if(seen.has(k))return;seen.add(k);tabRows.push('<label>'+esc8(b.dataset.e8DefaultLabel)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||b.dataset.e8DefaultLabel)+'"></label>')});
+ tabs.innerHTML=tabRows.join('');
+ seen=new Set();var inputRows=[];
+ document.querySelectorAll('main label:not(#settings label)').forEach(function(l){
+   var d=l.dataset.e8DefaultLabel,k=labelKey(d);if(!d||seen.has(k))return;seen.add(k);
+   inputRows.push('<label>'+esc8(d)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||d)+'"></label>');
+ });
+ document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){
+   var d=i.dataset.e8DefaultPlaceholder,k=placeholderKey(d);if(!d||seen.has(k))return;seen.add(k);
+   inputRows.push('<label>Placeholder · '+esc8(d)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||d)+'"></label>');
+ });
+ inputs.innerHTML=inputRows.join('');
+}
+
+async function loadCfg(){
+ if(!ready())return;
+ var q=await sb.from('admin_settings').select('value').eq('key','workspace').maybeSingle();
+ if(q.error){return}
+ cfg=Object.assign(cfg,q.data&&q.data.value||{});
+ cfg.labels=Object.assign({},cfg.labels||{});
+ RATE=Number(cfg.usd_php_rate)||59.5;MARKET_FEE_PCT=Number(cfg.marketplace_fee_pct)||15;PAYOUT_FEE_PCT=Number(cfg.payout_fee_pct)||4;
+ cfgLoaded=true;applyLabels();
+ var f=E('e8SettingsForm');if(f){
+  f.usd_php_rate.value=cfg.usd_php_rate;f.marketplace_fee_pct.value=cfg.marketplace_fee_pct;f.payout_fee_pct.value=cfg.payout_fee_pct;
+  f.refresh_seconds.value=cfg.refresh_seconds;f.default_inventory_status.value=cfg.default_inventory_status;
+  f.dashboard_auto_refresh.value=String(!!cfg.dashboard_auto_refresh);
+ }
+}
+async function saveCfg(patch){
+ if(!ready())return;
+ var value=Object.assign({},cfg,patch);
+ var q=await sb.from('admin_settings').upsert({key:'workspace',value:value,updated_by:R.me,updated_at:new Date().toISOString()},{onConflict:'key'});
+ if(q.error){E('e8SettingsMsg').textContent=q.error.message;return false}
+ cfg=value;RATE=Number(cfg.usd_php_rate)||59.5;MARKET_FEE_PCT=Number(cfg.marketplace_fee_pct)||15;PAYOUT_FEE_PCT=Number(cfg.payout_fee_pct)||4;
+ cfgLoaded=true;applyLabels();E('e8SettingsMsg').textContent='Saved and synced.';loadLiveDashboard();return true;
+}
+function stableLocal(){
+ return JSON.stringify((S.items||[]).map(function(i){return{
+  id:i.id,name:i.name,ms:i.ms,qty:Number(i.qty||0),soldQty:Number(i.soldQty||0),cost:Number(i.cost||0),price:Number(i.price||0),
+  account:i.account,status:i.status,added:i.added,delivery:i.delivery,deliveredAt:i.deliveredAt||0,notes:i.notes||'',gid:i.gid||i.id
+ }}));
+}
+function toDb(i){
+ var qty=Math.max(0,Math.floor(Number(i.qty)||0)),sold=Math.max(0,Math.min(qty,Number(i.soldQty||0)));
+ if(i.status==='SOLD'&&sold===0)sold=qty;
+ return {legacy_id:'local:'+i.id,name:String(i.name||'Untitled').trim(),ms:i.ms||'',quantity:qty,sold_quantity:sold,
+  cost:Math.max(0,Number(i.cost)||0),selling_price_usd:Math.max(0,Number(i.price)||0),account:i.account||'',
+  status:i.status||cfg.default_inventory_status,added_date:i.added||null,delivery_at:i.delivery||null,
+  delivered_at:i.deliveredAt?new Date(i.deliveredAt).toISOString():null,notes:i.notes||'',
+  metadata:{gid:i.gid||i.id,legacy:true,source:'admin_local_migration'}};
+}
+function fromDb(x){
+ return {id:String(x.legacy_id||'').replace(/^local:/,''),gid:x.metadata&&x.metadata.gid||x.id,name:x.name||'',ms:x.ms||'',
+  qty:Number(x.quantity||0),soldQty:Number(x.sold_quantity||0),cost:Number(x.cost||0),price:Number(x.selling_price_usd||0),
+  account:x.account||'',status:x.status||cfg.default_inventory_status,added:x.added_date||'',delivery:x.delivery_at||'',
+  deliveredAt:x.delivered_at?new Date(x.delivered_at).getTime():0,notes:x.notes||''};
+}
+async function syncLocalInventory(){
+ if(!ready()||invBusy)return;
+ invBusy=true;
+ try{
+  var rr=await sb.from('inventory_items').select('*').like('legacy_id','local:%').order('updated_at',{ascending:false});
+  if(rr.error)throw rr.error;
+  var remote=rr.data||[];
+  var localSig=stableLocal();
+  if(!invHydrated){
+   var remoteIds=new Set(remote.map(function(x){return x.legacy_id})),pendingLocal=(S.items||[]).filter(function(i){return !remoteIds.has('local:'+i.id)});
+   if(pendingLocal.length){var ins=await sb.from('inventory_items').upsert(pendingLocal.map(toDb),{onConflict:'legacy_id'});if(ins.error)throw ins.error}
+   var merged=await sb.from('inventory_items').select('*').like('legacy_id','local:%').order('updated_at',{ascending:false});if(merged.error)throw merged.error;
+   remote=merged.data||[];
+   if(remote.length)S.items=remote.map(fromDb);
+   invHydrated=true;localSig=stableLocal();
+  }else if(localSig!==lastLocalSig){
+   var wanted=new Set((S.items||[]).map(function(i){return 'local:'+i.id}));
+   var stale=remote.filter(function(x){return !wanted.has(x.legacy_id)}).map(function(x){return x.id});
+   if(stale.length){var de=await sb.from('inventory_items').delete().in('id',stale);if(de.error)throw de.error}
+   var up=await sb.from('inventory_items').upsert((S.items||[]).map(toDb),{onConflict:'legacy_id'});if(up.error)throw up.error;
+   lastLocalSig=localSig;
+  }
+  var fresh=await sb.from('inventory_items').select('*').like('legacy_id','local:%').order('updated_at',{ascending:false});if(fresh.error)throw fresh.error;
+  var freshRows=fresh.data||[],remoteSig=JSON.stringify(freshRows.map(function(x){return toDb(fromDb(x))}));
+  if(localSig===lastLocalSig&&remoteSig!==lastRemoteSig){S.items=freshRows.map(fromDb);localSig=stableLocal()}
+  lastLocalSig=localSig;lastRemoteSig=remoteSig;
+  renderInv();renderQty();
+ }catch(e){var h=E('e8DataHealth');if(h)h.innerHTML='<span style="color:var(--rd)">Inventory sync error: '+esc8(e.message||e)+'</span>'}
+ finally{invBusy=false}
+}
+async function recordSale(localId){
+ if(!ready())return;
+ var q=await sb.from('inventory_items').select('*').eq('legacy_id','local:'+localId).maybeSingle();if(q.error||!q.data){await syncLocalInventory();return}
+ var x=q.data,remaining=Math.max(0,Number(x.quantity||0)-Number(x.sold_quantity||0));if(!remaining)return;
+ var raw=prompt('How many units were sold? Maximum '+remaining,remaining);if(raw===null)return;
+ var n=Math.floor(Number(raw));if(!Number.isFinite(n)||n<1||n>remaining){alert('Enter a valid quantity from 1 to '+remaining+'.');return}
+ var price=prompt('Selling price per unit in USD',Number(x.selling_price_usd||0).toFixed(2));if(price===null)return;
+ var p=Number(price);if(!Number.isFinite(p)||p<0){alert('Enter a valid selling price.');return}
+ var z=await sb.rpc('record_inventory_sale',{p_inventory_item_id:x.id,p_quantity:n,p_unit_price_usd:p,p_note:'Admin Inventory sale'});
+ if(z.error){alert(z.error.message);return}
+ E('e8DashMeta').textContent='Sale recorded · '+new Date().toLocaleTimeString();await syncLocalInventory();await loadLiveDashboard();
+}
+window.e8LoadLiveDashboard=loadLiveDashboard;
+window.e8SyncInventory=syncLocalInventory;
+window.e8LoadSettings=loadCfg;
+
+renderDash=function(){};
+renderInv=function(){
+ var arr=S.items||[];
+ E('tInv').innerHTML=arr.length?arr.slice().reverse().map(function(i){
+  var c=calc(i),qty=Math.max(0,Number(i.qty||0)),sold=Math.min(qty,Math.max(0,Number(i.soldQty||0))),rem=Math.max(0,qty-sold);
+  return '<tr><td>'+esc8(i.name||'Untitled')+' <span style="color:var(--mu)">×'+qty+'</span></td><td>'+esc8(i.ms||'')+'</td><td>'+qty+'</td><td>'+sold+'</td><td class="'+(rem?'pos':'')+'">'+rem+'</td><td>'+money8(i.cost)+'</td><td>+Number(i.price||0).toFixed(2)+'</td><td>'+money8(c.net)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+money8(c.profit)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+c.pct.toFixed(1)+'%</td><td>'+esc8(i.account||'')+'</td><td><select data-st="'+i.id+'">'+ST.map(function(s){return '<option'+(s===i.status?' selected':'')+'>'+esc8(s)+'</option>'}).join('')+'</select></td><td>'+funds(i)+'</td><td><button class="sm" data-e8-sale="'+i.id+'" '+(rem?'':'disabled')+'>Record sale</button> <button class="sm" data-di="'+i.id+'">Delete</button></td></tr>'
+ }).join(''):'<tr><td colspan="14" class="empty">No inventory yet.</td></tr>';
+ E('accs').innerHTML=(S.vault||[]).map(function(v){return '<option value="'+esc8(v.name)+'">'}).join('');
+};
+renderQty=function(){
+ var m={};(S.items||[]).forEach(function(i){
+  var k=((i.name||'')+'|'+(i.ms||'')).trim().toLowerCase(),o=m[k]||(m[k]={n:(i.name||'')+(i.ms?' '+i.ms:''),t:0,l:0,s:0,d:0,a:0,c:0}),q=+i.qty||0,s=Math.min(q,+i.soldQty||0),r=Math.max(0,q-s);
+  o.t+=q;o.l+=(i.status==='LISTED'?r:0);o.s+=s;o.d+=(i.status==='DELIVERED / PENDING PAYMENT'||i.status==='COMPLETED'?r:0);o.a+=(i.status==='AVAILABLE'||i.status==='UNLISTED'?r:0);o.c+=(i.status==='CANCELLED / REFUNDED'?q:0);
+ });
+ var rows=Object.values(m),T={t:0,l:0,s:0,d:0,a:0,c:0};rows.forEach(function(r){Object.keys(T).forEach(function(k){T[k]+=r[k]})});
+ E('qCh').hidden=!T.c;
+ var row=function(n,r,b){return '<tr><td>'+(b?'<b>'+esc8(n)+'</b>':esc8(n))+'</td><td>'+r.t+'</td><td>'+r.l+'</td><td>'+r.s+'</td><td>'+r.d+'</td><td class="pos">'+r.a+'</td><td'+(T.c?'':' hidden')+'>'+r.c+'</td></tr>'};
+ E('tQty').innerHTML=rows.length?rows.map(function(r){return row(r.n,r)}).join('')+row('All items',T,true):'<tr><td colspan="7" class="empty">No items yet.</td></tr>';
+};
+
+async function loadLiveDashboard(){
+ if(!ready()||dashBusy)return;
+ dashBusy=true;
+ try{
+  var q=await sb.rpc('admin_dashboard_summary');if(q.error)throw q.error;
+  var x=q.data||{},rate=Number(cfg.usd_php_rate)||59.5,gross=Number(x.sales_gross_usd||0)*rate,net=gross*(1-Number(cfg.marketplace_fee_pct||15)/100)*(1-Number(cfg.payout_fee_pct||4)/100),salesCost=Number(x.sales_cost||0),profit=net-salesCost;
+  E('stats').innerHTML=stat('SALES GROSS',money8(gross),'var(--cy)')+
+   stat('SALES NET',money8(net),'var(--gr)')+
+   stat('SOLD UNITS',Number(x.inventory_sold_units||0).toLocaleString(),'var(--am)')+
+   stat('INVENTORY ON HAND',Number(x.inventory_on_hand_units||0).toLocaleString(),'var(--bl)')+
+   stat('INVENTORY CAPITAL',money8(x.inventory_cost),'var(--pu)')+
+   stat('SUPPLIER PAYABLE',money8(x.supplier_payable),'var(--rd)')+
+   stat('PENDING WITHDRAWALS',money8(x.pending_withdrawals),'var(--am)')+
+   stat('OPEN BUYING NEED',Number(x.buying_items_still_needed||0).toLocaleString(),'var(--cy)')+
+   stat('REALIZED PROFIT',money8(profit),profit>=0?'var(--gr)':'var(--rd)');
+  E('e8DashMeta').textContent='LIVE · '+new Date().toLocaleTimeString()+' · USD/PHP '+rate.toFixed(2)+' · '+cfg.refresh_seconds+'s refresh';
+  E('e8DashHealth').innerHTML='<h3>Live workspace</h3><div style="display:flex;align-items:center;gap:7px;color:var(--gr)"><span class="e8dot"></span>Supabase connected · '+Number(x.registered_suppliers||0)+' suppliers</div>';
+  E('e8DashBreakdownBody').innerHTML=[
+   ['Supplier on hand',Number(x.supplier_on_hand_units||0).toLocaleString()+' units'],
+   ['Supplier sold',Number(x.supplier_sold_units||0).toLocaleString()+' units'],
+   ['Withdrawn',money8(x.supplier_withdrawn)],
+   ['Open Buying Lists',Number(x.open_buying_lists||0).toLocaleString()],
+   ['Pending Custom Submissions',Number(x.pending_custom_submissions||0).toLocaleString()],
+   ['Pending Solo Tasks',Number(x.pending_solo_tasks||0).toLocaleString()]
+  ].map(function(a){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)"><span style="color:var(--e8-muted,#9ca4b5)">'+a[0]+'</span><b>'+a[1]+'</b></div>'}).join('');
+ }catch(e){
+  E('e8DashMeta').textContent='LIVE DATA ERROR · '+(e.message||e);
+  E('e8DashHealth').innerHTML='<h3>Live workspace</h3><div style="color:var(--rd)">Live performance data unavailable.</div>';
+ }finally{dashBusy=false}
+}
+
+E('e8SettingsForm')?.addEventListener('submit',async function(ev){
+ ev.preventDefault();var f=ev.target,labels=Object.assign({},cfg.labels);
+ document.querySelectorAll('[data-e8-label-key]').forEach(function(i){labels[i.dataset.e8LabelKey]=i.value.trim()||''});
+ await saveCfg({usd_php_rate:Number(f.usd_php_rate.value),marketplace_fee_pct:Number(f.marketplace_fee_pct.value),payout_fee_pct:Number(f.payout_fee_pct.value),refresh_seconds:Math.max(3,Number(f.refresh_seconds.value)||8),default_inventory_status:f.default_inventory_status.value,dashboard_auto_refresh:f.dashboard_auto_refresh.value==='true',labels:labels});
+});
+E('e8SettingsReset')?.addEventListener('click',async function(){
+ await saveCfg({usd_php_rate:59.5,marketplace_fee_pct:15,payout_fee_pct:4,refresh_seconds:8,default_inventory_status:'AVAILABLE',dashboard_auto_refresh:true,labels:{}});
+});
+E('e8LabelsSave')?.addEventListener('click',async function(){
+ var labels=Object.assign({},cfg.labels);document.querySelectorAll('[data-e8-label-key]').forEach(function(i){labels[i.dataset.e8LabelKey]=i.value.trim()||''});
+ var ok=await saveCfg({labels:labels});if(ok)E('e8LabelsMsg').textContent='Labels saved everywhere.';
+});
+E('e8SyncAll')?.addEventListener('click',async function(){
+ if(!ready()){E('e8SettingsMsg').textContent='Sign in as Admin first.';return}
+ E('e8SettingsMsg').textContent='Syncing…';
+ var a=await sb.rpc('sync_registered_suppliers'),b=await sb.rpc('sync_supplier_stock');
+ await loadCfg();await syncLocalInventory();await loadLiveDashboard();
+ var h=E('e8DataHealth');if(h)h.innerHTML=(a.error||b.error)?'<span style="color:var(--rd)">'+esc8((a.error||b.error).message)+'</span>':'<span style="color:var(--gr)">All live sources synchronized · '+new Date().toLocaleTimeString()+'</span>';
+ E('e8SettingsMsg').textContent='All live data synced.';
+});
+E('e8SyncAll')?.addEventListener('click',function(){setTimeout(function(){renderCustomizationEditors()},50)});
+
+document.addEventListener('click',function(ev){var d=ev.target.dataset||{};if(d.e8Sale)recordSale(d.e8Sale)});
+window.addEventListener('load',function(){prepareTargets();setTimeout(function(){if(ready()){loadCfg();syncLocalInventory();loadLiveDashboard()}},2200)});
+var observer=new MutationObserver(function(){prepareTargets()});observer.observe(document.querySelector('main'),{childList:true,subtree:true});
+
+setInterval(async function(){
+ if(!ready())return;
+ var now=Date.now();
+ if(!cfgLoaded){await loadCfg();return}
+ if(cfg.dashboard_auto_refresh && now-lastDash>=Math.max(3000,Number(cfg.refresh_seconds||8)*1000)){lastDash=now;loadLiveDashboard()}
+ if(now%(Math.max(4,Number(cfg.refresh_seconds||8))*1000)<1100)syncLocalInventory();
+},1000);
+})();
+</script></body></html>+Number(x.selling_price_usd).toFixed(2))+'</td><td>'+escS(x.inventory_account||'—')+'</td><td><button class="sm" data-st-jump="'+x.id+'">Manage</button></td></tr>').join('')||'<tr><td colspan="10" class="empty">No supplier stock is currently listed.</td></tr>';
 }
 E('e8StockSupplier')?.addEventListener('change',renderSupplierStock);
 E('e8StockSource')?.addEventListener('change',renderSupplierStock);
