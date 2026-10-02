@@ -2092,8 +2092,11 @@ async function syncLocalInventory(){
   var remote=rr.data||[];
   var localSig=stableLocal();
   if(!invHydrated){
-   if(remote.length){S.items=remote.map(fromDb)}
-   else if((S.items||[]).length){var ins=await sb.from('inventory_items').upsert(S.items.map(toDb),{onConflict:'legacy_id'});if(ins.error)throw ins.error;rr=await sb.from('inventory_items').select('*').like('legacy_id','local:%').order('updated_at',{ascending:false});remote=rr.data||[];if(remote.length)S.items=remote.map(fromDb)}
+   var remoteIds=new Set(remote.map(function(x){return x.legacy_id})),pendingLocal=(S.items||[]).filter(function(i){return !remoteIds.has('local:'+i.id)});
+   if(pendingLocal.length){var ins=await sb.from('inventory_items').upsert(pendingLocal.map(toDb),{onConflict:'legacy_id'});if(ins.error)throw ins.error}
+   var merged=await sb.from('inventory_items').select('*').like('legacy_id','local:%').order('updated_at',{ascending:false});if(merged.error)throw merged.error;
+   remote=merged.data||[];
+   if(remote.length)S.items=remote.map(fromDb);
    invHydrated=true;localSig=stableLocal();
   }else if(localSig!==lastLocalSig){
    var wanted=new Set((S.items||[]).map(function(i){return 'local:'+i.id}));
