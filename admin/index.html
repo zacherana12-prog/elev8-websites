@@ -49,7 +49,7 @@ tbody tr{transition:background .14s,transform .14s}tbody tr:hover{background:lin
 td select{width:auto;padding:7px 9px}
 .tag{display:inline-flex;align-items:center;gap:7px;padding:4px 9px;border-radius:999px;border:1px solid currentColor;background:currentColor;color:#fff;font:700 9px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;opacity:.92;background-color:transparent}
 .tag::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 9px currentColor}
-.t-pending{color:var(--am)!important}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)!important}.t-paid,.t-pd{color:var(--cy)!important}.t-rejected,.t-x{color:var(--rd)!important}
+.t-pending{color:var(--am)!important}.t-listed{color:var(--pu)!important}.t-completed{color:var(--gr)!important}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)!important}.t-paid,.t-pd{color:var(--cy)!important}.t-rejected,.t-x{color:var(--rd)!important}
 .pos{color:var(--gr)}.neg{color:var(--rd)}
 .empty{padding:28px 18px;text-align:center;color:var(--mu);font-size:13px}
 .av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;vertical-align:middle;margin-right:7px;border:1px solid rgba(255,255,255,.15);box-shadow:0 0 0 2px rgba(55,228,255,.04)}
@@ -437,7 +437,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 .e8-report-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))}
 .e8-report-toolbar>div{display:grid;gap:4px}.e8-report-toolbar strong{font-size:14px}.e8-report-toolbar span{font-size:12px;color:var(--mu)}
 .e8-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.e8-section-head span{font-size:11px;color:var(--mu)}
-.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
+.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-ledger-status{min-width:112px;padding:7px 9px}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
 .e8-compact-panel summary{cursor:pointer;padding:13px 2px;font-weight:700;color:var(--e-yellow,#ffd84d);list-style:none}.e8-compact-panel summary::-webkit-details-marker{display:none}.e8-compact-panel summary::after{content:'+';float:right;color:var(--mu)}.e8-compact-panel[open] summary::after{content:'−'}
 .e8-management-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 0 14px}.e8-management-grid .card{height:100%}
 .e8-wallet-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.e8-wallet-stats .stat{min-height:96px!important}
@@ -495,10 +495,10 @@ button,a,input,select,textarea{touch-action:manipulation}
 </div>
 <div class="grid" id="e8SupReportStats"></div>
 <div class="card wrap">
-  <div class="e8-section-head"><h3>Supplier earnings ledger</h3><span id="e8SupReportMeta"></span></div>
+  <div class="e8-section-head"><h3>Supplier earnings ledger</h3><span id="e8SupReportMeta"></span><span>Status workflow: Pending → Listed → Completed → Paid</span></div>
   <div style="overflow:auto">
     <table class="e8-ledger-table"><thead><tr>
-      <th>Date</th><th>Supplier</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Source</th><th>Status</th>
+      <th>Date</th><th>Supplier</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Source</th><th>Status</th><th>Action</th>
     </tr></thead><tbody id="e8SupReportRows"></tbody></table>
   </div>
 </div>
@@ -1828,7 +1828,7 @@ if(E('pBtn'))E('pBtn').onclick=async function(){
  var parsed=parseStock(txt,def),profile=(R.profs||[]).find(function(p){return p.name.trim().toLowerCase()===def.toLowerCase()});
  if(!profile){E('pMsg').textContent='Choose a supplier profile from the registered supplier list.';return}
  if(parsed.rows.length&&adminReady()){
-   var rows=parsed.rows.map(function(x){return {supplier_id:profile.id,item_name:x.item,quantity:x.qty,rate:Number(x.cost||0),status:'collected',source_type:'manual_entry',source_id:uuid(),source_note:'Admin paste task',collected_at:new Date().toISOString(),metadata:{tier:x.tier||'',paste_supplier:def}}});
+   var rows=parsed.rows.map(function(x){return {supplier_id:profile.id,item_name:x.item,quantity:x.qty,rate:Number(x.cost||0),status:'completed',source_type:'manual_entry',source_id:uuid(),source_note:'Admin paste task',collected_at:new Date().toISOString(),metadata:{tier:x.tier||'',paste_supplier:def}}});
    var ins=await sb.from('supplier_earnings_ledger').insert(rows);
    if(ins.error)E('pMsg').textContent+=' Live sync failed: '+ins.error.message;
    else E('pMsg').textContent+=' Synced to supplier balance and report.';
@@ -1841,7 +1841,7 @@ if(E('fEnt'))E('fEnt').onsubmit=async function(ev){
  ev.preventDefault();var d=fd(this),profile=(R.profs||[]).find(function(p){return p.name.trim().toLowerCase()===String(d.sup||'').trim().toLowerCase()});
  if(!profile){$('pMsg').textContent='Choose a registered supplier profile.';return}
  if(adminReady()){
-   var qty=Math.max(1,Number(d.qty)||1),rate=Math.max(0,Number(d.cost)||0),status=d.pay==='PAID'?'paid':'collected',paid=d.pay==='PARTIALLY PAID'?Math.min(qty*rate,Math.max(0,Number(d.paid)||0)):(d.pay==='PAID'?qty*rate:0);
+   var qty=Math.max(1,Number(d.qty)||1),rate=Math.max(0,Number(d.cost)||0),status=d.pay==='PAID'?'paid':'completed',paid=d.pay==='PARTIALLY PAID'?Math.min(qty*rate,Math.max(0,Number(d.paid)||0)):(d.pay==='PAID'?qty*rate:0);
    var ins=await sb.from('supplier_earnings_ledger').insert({supplier_id:profile.id,item_name:String(d.item||'').trim(),quantity:qty,rate:rate,status:status,paid_amount:paid,source_type:'manual_entry',source_id:uuid(),source_note:'Admin supplier report',collected_at:new Date().toISOString(),metadata:{payment_status:d.pay||'PENDING'}});
    if(ins.error)$('dMsg').textContent='Saved locally, but live supplier sync failed: '+ins.error.message; else loadLedger();
  }
@@ -1857,7 +1857,7 @@ async function loadLedger(){
  if(old)sel.value=old;
  E('e8LedgerRows').innerHTML=(q.data||[]).map(function(x){
    var n=(prof.find(function(p){return p.id===x.supplier_id})||{}).name||'Supplier',total=Number(x.quantity||0)*Number(x.rate||0);
-   return '<tr><td><select data-lsup="'+x.id+'">'+prof.map(function(p){return '<option value="'+p.id+'" '+(p.id===x.supplier_id?'selected':'')+'>'+escX(p.name)+'</option>'}).join('')+'</select></td><td><input data-lf="item_name" data-lid="'+x.id+'" value="'+escX(x.item_name)+'" style="width:150px"></td><td><input type="number" min="1" data-lf="quantity" data-lid="'+x.id+'" value="'+x.quantity+'" style="width:70px"></td><td><input type="number" step="0.01" min="0" data-lf="rate" data-lid="'+x.id+'" value="'+x.rate+'" style="width:90px"></td><td>'+money(total)+'</td><td><input type="number" step="0.01" min="0" data-lf="paid_amount" data-lid="'+x.id+'" value="'+x.paid_amount+'" style="width:90px"></td><td><select data-lf="status" data-lid="'+x.id+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="collected" '+(x.status==='collected'?'selected':'')+'>Collected</option><option value="paid" '+(x.status==='paid'?'selected':'')+'>Paid</option><option value="cancelled" '+(x.status==='cancelled'?'selected':'')+'>Cancelled</option></select></td><td>'+escX(x.source_type)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><button class="sm" data-lsave="'+x.id+'">Save</button></td></tr>'
+   return '<tr><td><select data-lsup="'+x.id+'">'+prof.map(function(p){return '<option value="'+p.id+'" '+(p.id===x.supplier_id?'selected':'')+'>'+escX(p.name)+'</option>'}).join('')+'</select></td><td><input data-lf="item_name" data-lid="'+x.id+'" value="'+escX(x.item_name)+'" style="width:150px"></td><td><input type="number" min="1" data-lf="quantity" data-lid="'+x.id+'" value="'+x.quantity+'" style="width:70px"></td><td><input type="number" step="0.01" min="0" data-lf="rate" data-lid="'+x.id+'" value="'+x.rate+'" style="width:90px"></td><td>'+money(total)+'</td><td><input type="number" step="0.01" min="0" data-lf="paid_amount" data-lid="'+x.id+'" value="'+x.paid_amount+'" style="width:90px"></td><td><select data-lf="status" data-lid="'+x.id+'" data-prev="'+X8(x.status)+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="listed" '+(x.status==='listed'?'selected':'')+'>Listed</option><option value="completed" '+(x.status==='completed'?'selected':'')+'>Completed</option><option value="paid" '+(x.status==='paid'?'selected':'')+'>Paid</option></select></td><td>'+escX(x.source_type)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><button class="sm" data-lsave="'+x.id+'">Save</button></td></tr>'
  }).join('')||'<tr><td colspan="10" class="empty">No live supplier ledger records yet.</td></tr>';
 }
 E('e8LedgerAdd')?.addEventListener('click',async function(){
@@ -1868,8 +1868,20 @@ E('e8LedgerAdd')?.addEventListener('click',async function(){
 });
 document.addEventListener('click',async function(ev){
  var d=ev.target.dataset||{};
+ if(d.e8LedgerSave){
+  var row=ev.target.closest('tr'),statusEl=row&&row.querySelector('[data-e8-ledger-status="'+d.e8LedgerSave+'"]');
+  if(!row||!statusEl||!adminReady()){if(E('e8SupReportMeta'))E('e8SupReportMeta').textContent='Sign in as Admin to edit ledger status.';return}
+  var st=statusEl.value,prev=statusEl.dataset.e8LedgerPrev||'',rec=cache.rows.find(function(r){return r.id===d.e8LedgerSave}),total=Number(rec?.total||0),paid=Number(rec?.paid_amount||0);
+  if(st==='paid')paid=total;else if(prev==='paid'&&st!=='paid')paid=0;paid=Math.min(Math.max(0,paid),Math.max(0,total));
+  statusEl.disabled=true;ev.target.disabled=true;
+  var u=await sb.from('supplier_earnings_ledger').update({status:st,paid_amount:paid,updated_at:new Date().toISOString()}).eq('id',d.e8LedgerSave);
+  statusEl.disabled=false;ev.target.disabled=false;
+  if(u.error){E('e8SupReportMeta').textContent='Ledger update failed: '+u.error.message;return}
+  E('e8SupReportMeta').textContent='Ledger status saved · '+st.toUpperCase()+' · '+new Date().toLocaleTimeString();
+  await loadSupplierReportAdmin();if(typeof loadPayAdmin==='function')loadPayAdmin();return;
+ }
  if(d.lsave){var tr=ev.target.closest('tr'),sup=tr.querySelector('[data-lsup="'+d.lsave+'"]').value,item=tr.querySelector('[data-lf="item_name"]').value.trim(),qty=Math.max(1,Number(tr.querySelector('[data-lf="quantity"]').value)||1),rate=Math.max(0,Number(tr.querySelector('[data-lf="rate"]').value)||0),paid=Math.max(0,Number(tr.querySelector('[data-lf="paid_amount"]').value)||0),st=tr.querySelector('[data-lf="status"]').value;
-  if(st==='paid')paid=qty*rate;if(st==='pending'||st==='cancelled')paid=0;paid=Math.min(paid,qty*rate);
+  var prev=tr.querySelector('[data-lf="status"]').dataset.prev||'';if(st==='paid')paid=qty*rate;else if(prev==='paid'&&st!=='paid')paid=0;paid=Math.min(paid,qty*rate);
   var u=await sb.from('supplier_earnings_ledger').update({supplier_id:sup,item_name:item,quantity:qty,rate:rate,paid_amount:paid,status:st,updated_at:new Date().toISOString()}).eq('id',d.lsave);E('e8LedgerMsg').textContent=u.error?u.error.message:'Ledger record updated. Supplier report and balance are synced.';if(!u.error)loadLedger();
  }
  if(d.correction){var msg=prompt('Tell the supplier what needs correction.');if(msg===null)return;var x=await sb.rpc('request_custom_correction',{p_submission_id:d.correction,p_message:msg});adminNotice(x.error?x.error.message:'Correction request sent.');loadCustom()}
@@ -1956,9 +1968,9 @@ async function loadSupplierReportAdmin(){
 }
 function render(){
  var sid=E('e8SupReportFilter').value,rows=cache.rows.filter(function(r){return !sid||r.supplier_id===sid}),nameMap=new Map(cache.profiles.map(function(p){return [p.id,p.name]}));
- var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),collected=rows.filter(function(r){return r.status==='collected'}).reduce(function(t,r){return t+Number(r.total||0)-Number(r.paid_amount||0)},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.filter(function(r){return r.status!=='cancelled'}).reduce(function(t,r){return t+Number(r.quantity||0)},0);
- E('e8SupReportStats').innerHTML=stat('LEDGER VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(collected),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
- E('e8SupReportRows').innerHTML=rows.map(function(r){return '<tr><td>'+new Date(r.created_at).toLocaleDateString()+'</td><td>'+X(nameMap.get(r.supplier_id)||'Supplier')+'</td><td>'+X(r.item_name)+'</td><td>'+Number(r.quantity||0)+'</td><td>'+M(r.rate)+'</td><td>'+M(r.total)+'</td><td>'+X(sourceName(r.source_type))+'</td><td><span class="tag t-'+X(r.status)+'">'+X(String(r.status||'').toUpperCase())+'</span></td></tr>'}).join('')||'<tr><td colspan="8" class="empty">No supplier ledger records yet.</td></tr>';
+ var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),completed=rows.filter(function(r){return r.status==='completed'}).reduce(function(t,r){return t+Math.max(0,Number(r.total||0)-Number(r.paid_amount||0))},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.reduce(function(t,r){return t+Number(r.quantity||0)},0);
+ E('e8SupReportStats').innerHTML=stat('LEDGER VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(completed),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
+ E('e8SupReportRows').innerHTML=rows.map(function(r){return '<tr data-e8-ledger-row="'+X(r.id)+'"><td>'+new Date(r.created_at).toLocaleDateString()+'</td><td>'+X(nameMap.get(r.supplier_id)||'Supplier')+'</td><td>'+X(r.item_name)+'</td><td>'+Number(r.quantity||0)+'</td><td>'+M(r.rate)+'</td><td>'+M(r.total)+'</td><td>'+X(sourceName(r.source_type))+'</td><td><select class="e8-ledger-status" data-e8-ledger-status="'+X(r.id)+'" data-e8-ledger-prev="'+X(r.status)+'"><option value="pending" '+(r.status==='pending'?'selected':'')+'>Pending</option><option value="listed" '+(r.status==='listed'?'selected':'')+'>Listed</option><option value="completed" '+(r.status==='completed'?'selected':'')+'>Completed</option><option value="paid" '+(r.status==='paid'?'selected':'')+'>Paid</option></select></td><td><button class="sm" type="button" data-e8-ledger-save="'+X(r.id)+'">Save</button></td></tr>'}).join('')||'<tr><td colspan="9" class="empty">No supplier ledger records yet.</td></tr>';
  E('e8SupReportMeta').textContent=rows.length+' record'+(rows.length===1?'':'s')+(sid?' · '+(nameMap.get(sid)||'Supplier'):'');
 }
 E('e8SupReportFilter')?.addEventListener('change',render);
