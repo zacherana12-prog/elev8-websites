@@ -36,7 +36,7 @@ td select{width:auto;padding:6px 8px}
 .tag{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;border:1px solid currentColor;font:500 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
 .tag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
 .tag{border-color:color-mix(in srgb,currentColor 35%,transparent);background:color-mix(in srgb,currentColor 9%,transparent)}
-.t-pending{color:var(--am)}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)}.t-paid,.t-pd{color:var(--cy)}.t-rejected,.t-x{color:var(--rd)}
+.t-pending{color:var(--am)}.t-listed{color:var(--pu)}.t-completed{color:var(--gr)}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)}.t-paid,.t-pd{color:var(--cy)}.t-rejected,.t-x{color:var(--rd)}
 .pos{color:var(--gr)}.neg{color:var(--rd)}
 .empty{padding:28px 18px;text-align:center;color:var(--mu);font-size:13px}
 .av{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;vertical-align:middle;margin-right:6px;border:1px solid var(--line2)}
@@ -89,7 +89,7 @@ td{border-bottom:1px solid var(--line)}tbody tr:hover{background:#00D9FF09}
 tbody td:first-child{box-shadow:inset 0 0 0 0 var(--cy);transition:box-shadow .15s}tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 0 var(--cy)}
 .tag{background:none;border:0;padding:0;border-radius:0;gap:7px;font:500 10px var(--mono);letter-spacing:.1em}
 .tag::before{width:6px;height:6px;box-shadow:0 0 8px currentColor}
-.t-pending{color:var(--am)}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)}.t-paid,.t-pd{color:var(--cy)}.t-rejected,.t-x{color:var(--rd)}
+.t-pending{color:var(--am)}.t-listed{color:var(--pu)}.t-completed{color:var(--gr)}.t-collected,.t-approved,.t-released,.t-received{color:var(--gr)}.t-paid,.t-pd{color:var(--cy)}.t-rejected,.t-x{color:var(--rd)}
 .av{border:1px solid var(--line2)}.av.ph{background:var(--hov);color:var(--cy);font-family:var(--disp)}
 aside{background:#06080C;border-right:1px solid var(--line)}
 aside nav button{display:flex;justify-content:space-between;align-items:center;border-radius:8px;padding:10px 12px;font:500 13px var(--sans);color:var(--mu)}
@@ -204,7 +204,7 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 
 <section id="vRep" hidden>
   <div class="e8-report-toolbar">
-    <div><strong>My supplier report</strong><span>Live earnings from approved and collected supplier work.</span></div>
+    <div><strong>My supplier report</strong><span>Live earnings from approved supplier work · Pending → Listed → Completed → Paid.</span></div>
     <label>Source
       <select id="e8RepFilter">
         <option value="">All activity</option>
@@ -465,8 +465,8 @@ async function loadSupplierWorkflow(){
   return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+X(t.title)+'</b><span class="tag '+(t.status==='approved'||t.status==='completed'?'t-approved':t.status==='denied'?'t-rejected':'t-pending')+'">'+X(t.status.replace('_',' ').toUpperCase())+'</span></div><small style="color:var(--mu)">'+new Date(t.created_at).toLocaleString()+(t.deadline?' · Due '+new Date(t.deadline).toLocaleString():'')+'</small><p style="margin:7px 0">'+X(t.instructions||'')+'</p>'+((t.solo_task_items||[]).map(function(i){return '<div style="display:grid;grid-template-columns:1fr 80px 100px;gap:7px;align-items:end;margin:5px 0"><span>'+X(i.item_name)+' <small style="color:var(--mu)">requested '+i.quantity+' @ '+M(i.rate)+'</small></span><label>Submit Qty<input type="number" min="0" max="'+i.quantity+'" value="'+i.submitted_quantity+'" data-sqitem="'+i.id+'" '+(can?'':'disabled')+'></label><span></span></div>'}).join(''))+(t.correction_message?'<div style="color:var(--am);margin-top:6px">Admin correction: '+X(t.correction_message)+'</div>':'')+(can?'<button class="btn" style="margin-top:7px" data-s-submit="'+t.id+'">Submit Solo Task</button>':'')+'</div>'
  }).join('')||'<div class="empty">No solo tasks assigned.</div>';
 
- var balance=ledger.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0))},0);
- var earned=ledger.filter(function(x){return ['collected','paid'].includes(x.status)}).reduce(function(t,x){return t+Number(x.total||0)},0);
+ var balance=ledger.filter(function(x){return x.status==='completed'}).reduce(function(t,x){return t+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0))},0);
+ var earned=ledger.filter(function(x){return ['completed','paid'].includes(x.status)}).reduce(function(t,x){return t+Number(x.total||0)},0);
 
 }
 document.addEventListener('click',async function(e){
@@ -503,8 +503,8 @@ async function loadSupplierReport(){
 }
 function render(){
  var f=E('e8RepFilter').value,rows=cache.filter(function(r){return !f||r.source_type===f}),w=(arguments[0]||null);
- var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),collected=rows.filter(function(r){return r.status==='collected'}).reduce(function(t,r){return t+Math.max(0,Number(r.total||0)-Number(r.paid_amount||0))},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.filter(function(r){return r.status!=='cancelled'}).reduce(function(t,r){return t+Number(r.quantity||0)},0);
- E('e8SupplierReportStats').innerHTML=stat('TOTAL VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(collected),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
+ var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),completed=rows.filter(function(r){return r.status==='completed'}).reduce(function(t,r){return t+Math.max(0,Number(r.total||0)-Number(r.paid_amount||0))},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.reduce(function(t,r){return t+Number(r.quantity||0)},0);
+ E('e8SupplierReportStats').innerHTML=stat('TOTAL VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(completed),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
  E('e8SupplierReportRows').innerHTML=rows.map(function(r){return '<tr><td>'+new Date(r.created_at).toLocaleDateString()+'</td><td>'+X(r.item_name)+'</td><td>'+Number(r.quantity||0)+'</td><td>'+M(r.rate)+'</td><td>'+M(r.total)+'</td><td>'+X(sourceName(r.source_type))+'</td><td><span class="tag t-'+X(r.status)+'">'+X(String(r.status||'').toUpperCase())+'</span></td></tr>'}).join('')||'<tr><td colspan="7" class="empty">No supplier earnings yet.</td></tr>';
  E('e8SupplierReportMeta').textContent=rows.length+' record'+(rows.length===1?'':'s');
 }
