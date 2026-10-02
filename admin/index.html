@@ -1566,7 +1566,7 @@ function E(id){return document.getElementById(id)}
 function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function X(v){var d=document.createElement('div');d.textContent=v==null?'':v;return d.innerHTML}
 async function loadPayAdmin(){
- if(!window.sb)return;
+ if(typeof sb==='undefined'||!sb)return;
  var z=await Promise.all([sb.from('profiles').select('id,name').eq('role','supplier').order('name'),sb.from('withdrawal_availability').select('*'),sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),sb.from('responses').select('id,supplier_id,request_id,qty,rate,status')]);
  if(z.some(function(x){return x.error}))return;
  var prof=z[0].data,av=z[1].data,wr=z[2].data,resp=z[3].data,ids=[...new Set(resp.filter(function(x){return x.status==='collected'}).map(function(x){return x.request_id}))],rq=[];
