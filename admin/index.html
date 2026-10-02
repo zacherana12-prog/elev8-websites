@@ -642,22 +642,7 @@ const paidOf=e=>e.qty*e.cost-owed(e);
 const today=()=>new Date().toISOString().slice(0,10);
 
 function stat(l,v,c){return`<div class="stat" style="--c:${c}"><small>${l}</small><b>${v}</b></div>`}
-function renderDash(){
- const live=S.items.filter(i=>state(i)!=='x'),rec=live.filter(i=>['received','released'].includes(state(i))),pen=live.filter(i=>state(i)==='pending'),stock=live.filter(i=>state(i)==='pd');
- const sum=(a,f)=>a.reduce((t,i)=>t+f(i),0),cap=sum(rec,i=>i.cost),prof=sum(rec,i=>calc(i).profit);
- const debt=sum(S.ents,owed);
- $('stats').innerHTML=stat('TOTAL SALES (gross)',php(sum(live.filter(i=>state(i)!=='pd'),i=>calc(i).gross)),'var(--cy)')+
- stat('RECEIVED MONEY (net)',php(sum(rec,i=>calc(i).net)),'var(--gr)')+
- stat('PENDING FUNDS (net)',php(sum(pen,i=>calc(i).net)),'var(--am)')+
- stat('TOTAL CAPITAL',php(sum(live,i=>i.cost)),'var(--bl)')+
- stat('TOTAL PROFIT',php(prof),prof<0?'var(--rd)':'var(--gr)')+
- stat('PROFIT %',(cap?prof/cap*100:0).toFixed(1)+'%','var(--pk)')+
- stat('INVENTORY VALUE',php(sum(stock,i=>i.cost)),'var(--pu)')+
- stat('SUPPLIER DEBT',php(debt),debt>0?'var(--rd)':'var(--gr)')+
- stat('COMPLETED ORDERS',rec.length,'var(--gr)')+
- stat('PENDING ORDERS',pen.length+stock.length,'var(--am)');
-}
-function renderInv(){
+function renderDash(){}function renderInv(){
  $('tInv').innerHTML=S.items.length?S.items.slice().reverse().map(i=>{const c=calc(i);return`<tr><td>${esc(i.name)} <span style="color:var(--mu)">×${i.qty}</span></td><td>${esc(i.ms)}</td><td>${php(i.cost)}</td><td>$${i.price.toFixed(2)}</td><td>${php(c.net)}</td><td class="${c.profit>=0?'pos':'neg'}">${php(c.profit)}</td><td class="${c.profit>=0?'pos':'neg'}">${c.pct.toFixed(1)}%</td><td>${esc(i.account)}</td>
  <td>${i.qty>1?`<input type="number" min="1" max="${i.qty}" value="${i.qty}" data-sq="${i.id}" title="How many of the ${i.qty} to change" style="width:64px;padding:6px"> `:''}<select data-st="${i.id}">${ST.map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}</select></td><td>${funds(i)}</td><td><button class="sm" data-di="${i.id}">Delete</button></td></tr>`}).join(''):'<tr><td colspan="11" class="empty">No items yet. Add your first item above.</td></tr>';
  $('accs').innerHTML=S.vault.map(v=>`<option value="${esc(v.name)}">`).join('');
