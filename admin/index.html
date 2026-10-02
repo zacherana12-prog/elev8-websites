@@ -521,27 +521,34 @@ Charles:
 <section id="stock" class="view">
 <h2>Supplier Stock &amp; Inventory</h2>
 <div class="e8-report-toolbar">
-  <div><strong>Unified supplier stock</strong><span>Buying Lists + Custom Submissions → Approval → On Hand → Listed → Sold.</span></div>
+  <div><strong>Unified supplier stock control</strong><span>One canonical stream for Buying List responses + Custom Submission items. Admin status is authoritative and syncs to source records, Supplier Report, supplier portal, payables, and Inventory.</span></div>
   <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
     <label>Supplier<select id="e8StockSupplier"><option value="">All suppliers</option></select></label>
     <label>Source<select id="e8StockSource"><option value="">All sources</option><option value="buying_list">Buying List</option><option value="custom_submission">Custom Submission</option></select></label>
     <label>Status<select id="e8StockStatus"><option value="">All statuses</option><option value="submitted">Submitted</option><option value="approved">Approved</option><option value="collected">On Hand</option><option value="listed">Listed</option><option value="partially_sold">Partially Sold</option><option value="sold">Sold</option><option value="cancelled">Cancelled</option></select></label>
-    <button class="sm" id="e8StockSync" type="button">Sync now</button>
+    <button class="sm" id="e8StockSync" type="button">Rebuild &amp; Sync</button>
   </div>
 </div>
+<div id="e8StockMsg" style="min-height:20px;color:var(--cy);font-size:12px"></div>
 <div class="grid" id="e8StockStats"></div>
 <div class="card wrap">
-  <div class="e8-section-head"><h3>Supplier stock records</h3><span id="e8StockMeta"></span></div>
+  <div class="e8-section-head"><h3>All submitted &amp; collected stock</h3><span id="e8StockMeta"></span></div>
   <div style="overflow:auto">
-    <table class="e8-ledger-table" style="min-width:1540px">
-      <thead><tr>
-        <th>Supplier</th><th>Source</th><th>Item</th><th>Submitted</th><th>Approved</th><th>Collected</th><th>On Hand</th><th>Sold</th><th>Status</th><th>Cost/Unit</th><th>Listing Name</th><th>Selling USD</th><th>Inventory Account</th><th>M/s</th><th>Notes</th><th></th>
-      </tr></thead>
+    <table class="e8-ledger-table" style="min-width:1780px">
+      <thead><tr><th>Supplier</th><th>Source</th><th>Item</th><th>Submitted</th><th>Approved</th><th>Collected</th><th>On Hand</th><th>Sold</th><th>Remaining</th><th>Status</th><th>Cost/Unit</th><th>Listing Name</th><th>Selling USD</th><th>Inventory Account</th><th>M/s</th><th>Notes</th><th>Actions</th></tr></thead>
       <tbody id="e8StockRows"></tbody>
     </table>
   </div>
 </div>
-<div id="e8StockMsg" style="min-height:20px;color:var(--cy);font-size:12px"></div>
+<div class="card wrap">
+  <div class="e8-section-head"><h3>Inventory mirror</h3><span>Only Listed / Partially Sold / Sold stock appears in the sellable inventory.</span></div>
+  <div style="overflow:auto">
+    <table style="min-width:1000px">
+      <thead><tr><th>Supplier</th><th>Item</th><th>Collected</th><th>Sold</th><th>On Hand</th><th>Status</th><th>Cost</th><th>Selling USD</th><th>Account</th><th></th></tr></thead>
+      <tbody id="e8SupplierInventoryRows"></tbody>
+    </table>
+  </div>
+</div>
 </section>
 
 <div id="e8LegacyReportDom" hidden>
@@ -1940,88 +1947,104 @@ window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined'
 </script><script id="e8-supplier-stock-manager">
 (function(){
 'use strict';
-var E=id=>document.getElementById(id), stockCache=[], stockProfiles=[];
+var E=function(id){return document.getElementById(id)},stockCache=[],stockProfiles=[];
 function escS(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
 function moneyS(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function sourceS(v){return v==='buying_list'?'Buying List':'Custom Submission'}
 function labelS(v){return ({submitted:'SUBMITTED',approved:'APPROVED',collected:'ON HAND',listed:'LISTED',partially_sold:'PARTIALLY SOLD',sold:'SOLD',cancelled:'CANCELLED'}[v]||String(v||'').toUpperCase())}
-function tagS(v){var cls=v==='sold'?'t-paid':v==='listed'||v==='collected'||v==='approved'?'t-received':v==='cancelled'?'t-x':v==='partially_sold'?'t-pending':'t-pending';return '<span class="tag '+cls+'">'+labelS(v)+'</span>'}
+function tagS(v){var cls=v==='sold'?'t-paid':v==='listed'||v==='partially_sold'||v==='collected'?'t-received':v==='cancelled'?'t-x':'t-pending';return '<span class="tag '+cls+'">'+labelS(v)+'</span>'}
+function sourceLabel(x){
+  var meta=x&&x.metadata||{},base=x&&x.source_type==='buying_list'?'Buying List':'Custom Submission';
+  if(x&&x.source_type==='buying_list')return base+'<small style="display:block;color:var(--mu);font-size:10px">'+escS(String(meta.source_response_status||'pending').toUpperCase())+'</small>';
+  return base+'<small style="display:block;color:var(--mu);font-size:10px">'+escS(String(meta.source_review_status||'submitted').toUpperCase())+' · '+escS(String(meta.source_supplier_status||'on_hold').toUpperCase())+'</small>';
+}
 function statS(l,v,c){return '<div class="stat" style="--c:'+c+'"><small>'+l+'</small><b>'+v+'</b></div>'}
+function supplierRows(){return (window.e8RegisteredSuppliers?window.e8RegisteredSuppliers():stockProfiles).slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name))})}
 function populateSuppliers(){
- var s=E('e8StockSupplier'),old=s?s.value:'',names=(window.e8RegisteredSuppliers?window.e8RegisteredSuppliers():stockProfiles).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
- if(s){s.innerHTML='<option value="">All suppliers</option>'+names.map(p=>'<option value="'+p.id+'">'+escS(p.name)+'</option>').join('');if(names.some(p=>p.id===old))s.value=old}
+  var s=E('e8StockSupplier');if(!s)return;
+  var old=s.value,names=supplierRows();
+  s.innerHTML='<option value="">All suppliers</option>'+names.map(function(p){return '<option value="'+escS(p.id)+'">'+escS(p.name)+'</option>'}).join('');
+  if(names.some(function(p){return p.id===old}))s.value=old;
 }
 async function loadSupplierStock(){
- if(typeof sb==='undefined'||!sb||!R||!R.me)return;
- var sync=await sb.rpc('sync_supplier_stock');
- if(sync.error){E('e8StockMsg').textContent=sync.error.message;return}
- var q=await Promise.all([
-   sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false}),
-   sb.from('profiles').select('id,name').eq('role','supplier').order('name')
- ]);
- if(q.some(x=>x.error)){E('e8StockMsg').textContent=(q.find(x=>x.error)||{}).error?.message||'Could not load supplier stock.';return}
- stockCache=q[0].data||[];stockProfiles=q[1].data||[];populateSuppliers();renderSupplierStock();renderSupplierInventory();
+  if(typeof sb==='undefined'||!sb||typeof R==='undefined'||!R||!R.me)return;
+  if(window.e8RefreshRegisteredSuppliers)await window.e8RefreshRegisteredSuppliers(false);
+  E('e8StockMsg').textContent='Synchronizing source submissions…';
+  var sync=await sb.rpc('sync_supplier_stock');
+  if(sync.error){E('e8StockMsg').textContent='Stock sync failed: '+sync.error.message;return}
+  var q=await Promise.all([
+    sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false}),
+    sb.from('profiles').select('id,name').eq('role','supplier').order('name')
+  ]);
+  if(q.some(function(x){return x.error})){E('e8StockMsg').textContent=(q.find(function(x){return x.error})||{}).error?.message||'Could not load supplier stock.';return}
+  stockCache=q[0].data||[];stockProfiles=q[1].data||[];populateSuppliers();renderSupplierStock();renderSupplierInventory();
+  E('e8StockMsg').textContent='Live supplier stock synced · '+new Date().toLocaleTimeString();
 }
 function filteredStock(){
- var sid=E('e8StockSupplier')?.value||'',src=E('e8StockSource')?.value||'',st=E('e8StockStatus')?.value||'';
- return stockCache.filter(x=>(!sid||x.supplier_id===sid)&&(!src||x.source_type===src)&&(!st||x.status===st));
+  var sid=E('e8StockSupplier')?.value||'',src=E('e8StockSource')?.value||'',st=E('e8StockStatus')?.value||'';
+  return stockCache.filter(function(x){return(!sid||x.supplier_id===sid)&&(!src||x.source_type===src)&&(!st||x.status===st)});
 }
 function renderSupplierStock(){
- var rows=filteredStock(),nm=new Map(stockProfiles.map(p=>[p.id,p.name]));
- var submitted=rows.reduce((t,x)=>t+Number(x.submitted_quantity||0),0),approved=rows.reduce((t,x)=>t+Number(x.approved_quantity||0),0),collected=rows.reduce((t,x)=>t+Number(x.collected_quantity||0),0),onhand=rows.reduce((t,x)=>t+Number(x.on_hand_quantity||0),0),sold=rows.reduce((t,x)=>t+Number(x.sold_quantity||0),0);
- E('e8StockStats').innerHTML=statS('SUBMITTED',submitted,'var(--cy)')+statS('APPROVED',approved,'var(--pu)')+statS('ON HAND',onhand,'var(--gr)')+statS('SOLD',sold,'var(--am)')+statS('REMAINING',onhand,'var(--bl)');
- E('e8StockMeta').textContent=rows.length+' record'+(rows.length===1?'':'s');
- E('e8StockRows').innerHTML=rows.map(x=>{
-   var canList=x.collected_quantity>0;
-   var status=x.status;
-   return '<tr data-stock-row="'+x.id+'">'+
-   '<td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td>'+
-   '<td>'+escS(sourceS(x.source_type))+'</td>'+
-   '<td>'+escS(x.item_name)+'</td>'+
-   '<td>'+x.submitted_quantity+'</td>'+
-   '<td><input type="number" min="0" max="'+x.submitted_quantity+'" value="'+x.approved_quantity+'" data-st-f="approved_quantity" style="width:78px"></td>'+
-   '<td><input type="number" min="0" max="'+x.approved_quantity+'" value="'+x.collected_quantity+'" data-st-f="collected_quantity" style="width:78px"></td>'+
-   '<td>'+x.on_hand_quantity+'</td>'+
-   '<td><input type="number" min="0" max="'+x.collected_quantity+'" value="'+x.sold_quantity+'" data-st-f="sold_quantity" style="width:72px"></td>'+
-   '<td><select data-st-f="status" style="width:126px">'+['submitted','approved','collected','listed','partially_sold','sold','cancelled'].map(v=>'<option value="'+v+'" '+(v===status?'selected':'')+'>'+labelS(v)+'</option>').join('')+'</select></td>'+
-   '<td>'+moneyS(x.unit_cost)+'</td>'+
-   '<td><input value="'+escS(x.listing_item_name||x.item_name)+'" data-st-f="listing_item_name" style="width:170px" '+(canList?'':'disabled')+'></td>'+
-   '<td><input type="number" min="0" step="0.01" value="'+(x.selling_price_usd??'')+'" data-st-f="selling_price_usd" style="width:105px" '+(canList?'':'disabled')+'></td>'+
-   '<td><input value="'+escS(x.inventory_account||'')+'" data-st-f="inventory_account" style="width:150px" '+(canList?'':'disabled')+'></td>'+
-   '<td><input value="'+escS(x.listing_ms||'')+'" data-st-f="listing_ms" style="width:100px" '+(canList?'':'disabled')+'></td>'+
-   '<td><input value="'+escS(x.listing_notes||'')+'" data-st-f="listing_notes" style="width:170px" '+(canList?'':'disabled')+'></td>'+
-   '<td><button class="sm" data-st-save="'+x.id+'">Save</button></td></tr>'
- }).join('')||'<tr><td colspan="16" class="empty">No supplier stock records match the current filters.</td></tr>';
+  var rows=filteredStock(),nm=new Map(stockProfiles.map(function(p){return[p.id,p.name]}));
+  var submitted=rows.reduce(function(t,x){return t+Number(x.submitted_quantity||0)},0),approved=rows.reduce(function(t,x){return t+Number(x.approved_quantity||0)},0),collected=rows.reduce(function(t,x){return t+Number(x.collected_quantity||0)},0),onhand=rows.reduce(function(t,x){return t+Number(x.on_hand_quantity||0)},0),sold=rows.reduce(function(t,x){return t+Number(x.sold_quantity||0)},0);
+  E('e8StockStats').innerHTML=statS('SUBMISSIONS',rows.length,'var(--cy)')+statS('SUBMITTED UNITS',submitted,'var(--cy)')+statS('APPROVED',approved,'var(--pu)')+statS('COLLECTED',collected,'var(--gr)')+statS('ON HAND',onhand,'var(--bl)')+statS('SOLD',sold,'var(--am)')+statS('REMAINING',onhand,'var(--gr)');
+  E('e8StockMeta').textContent=rows.length+' record'+(rows.length===1?'':'s')+' · filtered from '+stockCache.length+' live records';
+  E('e8StockRows').innerHTML=rows.map(function(x){
+    var source=sourceLabel(x);
+    return '<tr data-stock-row="'+escS(x.id)+'" data-submitted="'+Number(x.submitted_quantity||0)+'">'+
+      '<td><b>'+escS(nm.get(x.supplier_id)||'Supplier')+'</b></td><td>'+source+'</td><td><b>'+escS(x.item_name||'Untitled')+'</b></td>'+
+      '<td>'+Number(x.submitted_quantity||0)+'</td>'+
+      '<td><input type="number" min="0" max="'+Number(x.submitted_quantity||0)+'" value="'+Number(x.approved_quantity||0)+'" data-st-f="approved_quantity" style="width:78px"></td>'+
+      '<td><input type="number" min="0" max="'+Number(x.approved_quantity||x.submitted_quantity||0)+'" value="'+Number(x.collected_quantity||0)+'" data-st-f="collected_quantity" style="width:78px"></td>'+
+      '<td>'+Number(x.on_hand_quantity||0)+'</td>'+
+      '<td><input type="number" min="0" max="'+Number(x.collected_quantity||0)+'" value="'+Number(x.sold_quantity||0)+'" data-st-f="sold_quantity" style="width:72px"></td>'+
+      '<td>'+Number(x.on_hand_quantity||0)+'</td>'+
+      '<td><select data-st-f="status" style="width:135px">'+['submitted','approved','collected','listed','partially_sold','sold','cancelled'].map(function(v){return '<option value="'+v+'" '+(v===x.status?'selected':'')+'>'+labelS(v)+'</option>'}).join('')+'</select></td>'+
+      '<td>'+moneyS(x.unit_cost)+'</td>'+
+      '<td><input value="'+escS(x.listing_item_name||x.item_name||'')+'" data-st-f="listing_item_name" style="width:175px"></td>'+
+      '<td><input type="number" min="0" step="0.01" value="'+(x.selling_price_usd==null?'':Number(x.selling_price_usd))+'" data-st-f="selling_price_usd" style="width:105px"></td>'+
+      '<td><input value="'+escS(x.inventory_account||'')+'" data-st-f="inventory_account" style="width:150px"></td>'+
+      '<td><input value="'+escS(x.listing_ms||'')+'" data-st-f="listing_ms" style="width:100px"></td>'+
+      '<td><input value="'+escS(x.listing_notes||'')+'" data-st-f="listing_notes" style="width:170px"></td>'+
+      '<td><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="sm" data-st-save="'+escS(x.id)+'">Save</button><button class="sm" data-st-source="'+escS(x.id)+'" title="Restore status and quantities from the source submission">↺ Source</button></div></td></tr>';
+  }).join('')||'<tr><td colspan="17" class="empty">No supplier stock records match the current filters.</td></tr>';
+}
+function setNum(tr,k,n){var el=tr.querySelector('[data-st-f="'+k+'"]');if(el)el.value=String(Math.max(0,Math.floor(Number(n)||0)))}
+function previewStatus(tr,status){
+  var sub=Number(tr.dataset.submitted||0),aq=Number(tr.querySelector('[data-st-f="approved_quantity"]')?.value||0),cq=Number(tr.querySelector('[data-st-f="collected_quantity"]')?.value||0),sq=Number(tr.querySelector('[data-st-f="sold_quantity"]')?.value||0);
+  if(status==='submitted'||status==='cancelled'){aq=0;cq=0;sq=0}
+  else if(status==='approved'){aq=aq||sub;cq=0;sq=0}
+  else if(status==='collected'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=0}
+  else if(status==='listed'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=Math.min(sq,cq)}
+  else if(status==='sold'){aq=Math.min(sub,Math.max(aq,sub));cq=cq||aq;sq=cq}
+  else if(status==='partially_sold'){aq=Math.min(sub,Math.max(aq,cq));cq=Math.min(aq,Math.max(cq,0));sq=Math.min(cq,Math.max(sq,0))}
+  setNum(tr,'approved_quantity',aq);setNum(tr,'collected_quantity',cq);setNum(tr,'sold_quantity',sq);
 }
 async function saveStock(id){
- var tr=document.querySelector('[data-stock-row="'+id+'"]');if(!tr)return;
- var val=k=>tr.querySelector('[data-st-f="'+k+'"]')?.value;
- var status=val('status'),aq=Math.max(0,Math.floor(Number(val('approved_quantity'))||0)),cq=Math.max(0,Math.floor(Number(val('collected_quantity'))||0)),sq=Math.max(0,Math.floor(Number(val('sold_quantity'))||0));
- if(aq>Number(tr.querySelector('[data-st-f="approved_quantity"]').max||0)){E('e8StockMsg').textContent='Approved quantity cannot exceed submitted quantity.';return}
- if(cq>aq){E('e8StockMsg').textContent='Collected quantity cannot exceed approved quantity.';return}
- if(sq>cq){E('e8StockMsg').textContent='Sold quantity cannot exceed collected quantity.';return}
- var r=await sb.rpc('update_supplier_stock_item',{
-   p_stock_id:id,p_status:status,p_approved_quantity:aq,p_collected_quantity:cq,p_sold_quantity:sq,
-   p_listing_item_name:val('listing_item_name')||null,
-   p_selling_price_usd:val('selling_price_usd')===''?null:Number(val('selling_price_usd')),
-   p_inventory_account:val('inventory_account')||null,p_listing_ms:val('listing_ms')||null,p_listing_notes:val('listing_notes')||null
- });
- E('e8StockMsg').textContent=r.error?r.error.message:'Supplier stock updated and synced.';
- if(!r.error){loadSupplierStock()}
+  var tr=document.querySelector('[data-stock-row="'+id+'"]');if(!tr)return;
+  var status=tr.querySelector('[data-st-f="status"]').value;
+  previewStatus(tr,status);
+  var aq=Math.floor(Number(tr.querySelector('[data-st-f="approved_quantity"]').value)||0),cq=Math.floor(Number(tr.querySelector('[data-st-f="collected_quantity"]').value)||0),sq=Math.floor(Number(tr.querySelector('[data-st-f="sold_quantity"]').value)||0),sub=Number(tr.dataset.submitted||0);
+  if(aq>sub){E('e8StockMsg').textContent='Approved quantity cannot exceed submitted quantity.';return}
+  if(cq>aq){E('e8StockMsg').textContent='Collected quantity cannot exceed approved quantity.';return}
+  if(sq>cq){E('e8StockMsg').textContent='Sold quantity cannot exceed collected quantity.';return}
+  if(status==='partially_sold'&&(sq<=0||sq>=cq)){E('e8StockMsg').textContent='Partially Sold needs sold quantity greater than 0 and less than collected/on-hand quantity.';return}
+  var val=function(k){return tr.querySelector('[data-st-f="'+k+'"]')?.value||''};
+  var r=await sb.rpc('update_supplier_stock_item',{p_stock_id:id,p_status:status,p_approved_quantity:aq,p_collected_quantity:cq,p_sold_quantity:sq,p_listing_item_name:val('listing_item_name')||null,p_selling_price_usd:val('selling_price_usd')===''?null:Number(val('selling_price_usd')),p_inventory_account:val('inventory_account')||null,p_listing_ms:val('listing_ms')||null,p_listing_notes:val('listing_notes')||null});
+  if(r.error){E('e8StockMsg').textContent='Update failed: '+r.error.message;return}
+  await loadSupplierStock();
 }
-function renderSupplierInventory(){
- var rows=stockCache.filter(x=>['listed','partially_sold','sold'].includes(x.status)&&x.collected_quantity>0),nm=new Map(stockProfiles.map(p=>[p.id,p.name]));
-  E('e8SupplierInventoryRows').innerHTML=rows.map(x=>'<tr><td>'+escS(nm.get(x.supplier_id)||'Supplier')+'</td><td>'+escS(x.listing_item_name||x.item_name)+'</td><td>'+x.collected_quantity+'</td><td>'+x.sold_quantity+'</td><td>'+x.on_hand_quantity+'</td><td>'+tagS(x.status)+'</td><td>'+moneyS(x.unit_cost)+'</td><td>'+((x.selling_price_usd==null)?'—':'$'+Number(x.selling_price_usd).toFixed(2))+'</td><td>'+escS(x.inventory_account||'—')+'</td><td><button class="sm" data-st-jump="'+x.id+'">Manage</button></td></tr>').join('')||'<tr><td colspan="10" class="empty">No supplier stock is currently listed.</td></tr>';
+async function resetToSource(id){
+  var tr=document.querySelector('[data-stock-row="'+id+'"]');if(!tr)return;
+  var val=function(k){return tr.querySelector('[data-st-f="'+k+'"]')?.value||''};
+  var r=await sb.rpc('update_supplier_stock_item',{p_stock_id:id,p_status:'__SOURCE__',p_approved_quantity:Math.floor(Number(val('approved_quantity'))||0),p_collected_quantity:Math.floor(Number(val('collected_quantity'))||0),p_sold_quantity:Math.floor(Number(val('sold_quantity'))||0),p_listing_item_name:val('listing_item_name')||null,p_selling_price_usd:val('selling_price_usd')===''?null:Number(val('selling_price_usd')),p_inventory_account:val('inventory_account')||null,p_listing_ms:val('listing_ms')||null,p_listing_notes:val('listing_notes')||null});
+  E('e8StockMsg').textContent=r.error?'Source restore failed: '+r.error.message:'Status and quantities restored from the original submission source.';if(!r.error)await loadSupplierStock();
 }
 E('e8StockSupplier')?.addEventListener('change',renderSupplierStock);
 E('e8StockSource')?.addEventListener('change',renderSupplierStock);
 E('e8StockStatus')?.addEventListener('change',renderSupplierStock);
 E('e8StockSync')?.addEventListener('click',loadSupplierStock);
-document.addEventListener('click',function(ev){
- var d=ev.target.dataset||{};
- if(d.stSave)saveStock(d.stSave);
- if(d.stJump){var b=document.querySelector('[data-v="stock"]');if(b)b.click();setTimeout(function(){var tr=document.querySelector('[data-stock-row="'+d.stJump+'"]');tr?.scrollIntoView({behavior:'smooth',block:'center'})},80)}
-});
+document.addEventListener('change',function(ev){var t=ev.target;if(t&&t.matches('[data-st-f="status"]'))previewStatus(t.closest('tr'),t.value)});
+document.addEventListener('click',function(ev){var d=ev.target.dataset||{};if(d.stSave)saveStock(d.stSave);if(d.stSource)resetToSource(d.stSource);if(d.stJump){var b=document.querySelector('[data-v="stock"]');if(b)b.click();setTimeout(function(){var tr=document.querySelector('[data-stock-row="'+d.stJump+'"]');tr?.scrollIntoView({behavior:'smooth',block:'center'})},80)}});
 window.e8LoadSupplierStock=loadSupplierStock;
 addEventListener('load',function(){setTimeout(loadSupplierStock,1900);setInterval(function(){if(E('stock')&&!E('stock').hidden)loadSupplierStock()},8000)});
 })();
