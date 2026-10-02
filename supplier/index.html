@@ -165,7 +165,28 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 .e8-wallet-action{max-width:760px}.e8-wallet-action #e8WForm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
 @media(max-width:900px){.e8-management-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.e8-management-grid,.e8-wallet-stats{grid-template-columns:1fr}.e8-wallet-action #e8WForm{grid-template-columns:1fr}}
-</style></head><body><div class="box">
+<style id="e8-communications-ui">
+.e8-comm-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:14px;padding:18px 20px;border:1px solid var(--line2);border-radius:16px;background:linear-gradient(135deg,rgba(53,224,255,.08),rgba(255,59,154,.055) 55%,rgba(123,108,255,.07));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 20px 50px -32px #000}
+.e8-comm-hero h2{margin:0 0 6px;border:0;padding:0;font-size:25px}
+.e8-comm-hero p{margin:0;color:var(--mu);font-size:12px;max-width:720px}
+.e8-comm-badges{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.e8-comm-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(53,224,255,.22);border-radius:999px;background:rgba(7,11,28,.55);color:#d9f8ff;font:700 9px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.e8-comm-badge.private{border-color:rgba(255,59,154,.25);color:#ffd9ec}
+.e8-comm-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr);gap:14px;align-items:stretch}
+.e8-comm-card{display:flex;flex-direction:column;min-height:560px;margin:0!important;overflow:hidden}
+.e8-comm-card .e8-comm-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.e8-comm-card .e8-comm-card-head h3{margin-bottom:4px}
+.e8-comm-card .e8-comm-card-head p{margin:0;color:var(--mu);font-size:11px}
+.e8-comm-feed{flex:1;min-height:300px;overflow-y:auto;padding:6px 2px}
+.e8-comm-feed::-webkit-scrollbar{width:7px}.e8-comm-feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:999px}
+.e8-comm-compose{padding-top:12px;border-top:1px solid var(--line)}
+.e8-comm-compose form{display:flex!important;gap:8px;align-items:center}
+.e8-comm-compose input{min-width:0}
+.e8-comm-admin-note{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(255,59,154,.055);border:1px solid rgba(255,59,154,.12);color:#c9cede;font-size:10px}
+.e8-comm-public-note{margin-top:8px;padding:8px 10px;border-radius:9px;background:rgba(53,224,255,.045);border:1px solid rgba(53,224,255,.11);color:#c9cede;font-size:10px}
+@media(max-width:860px){.e8-comm-grid{grid-template-columns:1fr}.e8-comm-card{min-height:460px}}
+@media(max-width:520px){.e8-comm-hero{padding:15px}.e8-comm-card{min-height:430px}}
+</style></style></head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
 <label>Account number<input name="pay_number" inputmode="numeric" maxlength="34" pattern="[0-9][0-9 \-]*" title="Numbers only" autocomplete="off"></label>
@@ -175,7 +196,7 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 
 <div id="app" hidden>
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;align-items:center;gap:10px"><button class="sm" id="avB" type="button" title="Change photo" style="padding:2px;border-radius:50%"></button><input type="file" id="avF" accept="image/*" hidden><div><div class="logo">ELEV8 SUPPLIER PORTAL</div><small id="who" style="color:var(--mu)"></small></div></div><button class="sm" id="out">Sign out</button></div>
-<nav><button class="on" data-t="vReq">Buying</button><button data-t="vRep">Supplier Report</button><button data-t="vChat">Chat</button><button data-t="vDm">Message Admin</button><button data-t="vWithdraw">Payments</button><button data-t="vPay">Profile</button><button data-t="vUpd">Updates</button></nav>
+<nav><button class="on" data-t="vReq">Buying</button><button data-t="vRep">Supplier Report</button><button data-t="vComm">Communications</button><button data-t="vWithdraw">Payments</button><button data-t="vPay">Profile</button><button data-t="vUpd">Updates</button></nav>
 
 <section id="vReq"><div class="card wrap"><h3>Buying</h3><div id="rMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div>
 <table><thead><tr><th>Item</th><th>Needed</th><th>Rate</th><th>Total Available</th><th>Still Needed</th><th>My Available Qty</th><th>My Status</th></tr></thead><tbody id="tReq"></tbody></table>
@@ -213,11 +234,42 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
   </div>
 </section>
 
-<section id="vChat" hidden><div class="card" id="annC" hidden><h3>📢 Announcements</h3><div id="annL" style="max-height:30vh;overflow-y:auto"></div></div><div class="card"><h3>Group Chat <small style="color:var(--mu);font-weight:400">all suppliers + admin</small></h3><div id="chL" style="max-height:50vh;overflow-y:auto"></div>
-<form id="fChat" style="display:flex;gap:8px;margin-top:10px"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message"><button class="btn">Send</button></form></div></section>
-
-<section id="vDm" hidden><div class="card"><h3>Direct message to Admin <small style="color:var(--mu);font-weight:400">private, only you and admin</small></h3><div id="dmL" style="max-height:50vh;overflow-y:auto"></div>
-<form id="fDm" style="display:flex;gap:8px;margin-top:10px"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message admin"><button class="btn">Send</button></form></div></section>
+<section id="vComm" hidden>
+  <div class="e8-comm-hero">
+    <div>
+      <h2>Communications</h2>
+      <p>One workspace for supplier-wide coordination and private support with Admin. Both channels update live without leaving this tab.</p>
+    </div>
+    <div class="e8-comm-badges">
+      <span class="e8-comm-badge">● Live Workspace</span>
+      <span class="e8-comm-badge private">● Private Admin</span>
+    </div>
+  </div>
+  <div class="e8-comm-grid">
+    <div class="card e8-comm-card">
+      <div class="e8-comm-card-head">
+        <div><h3>Group Chat</h3><p>All suppliers + Admin · shared workspace</p></div>
+        <span class="e8-comm-badge">PUBLIC</span>
+      </div>
+      <div class="e8-comm-feed" id="chL"></div>
+      <div class="e8-comm-compose">
+        <form id="fChat"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message the supplier group"><button class="btn">Send</button></form>
+        <div class="e8-comm-public-note">Use this channel for stock updates, coordination, availability, and general supplier announcements.</div>
+      </div>
+    </div>
+    <div class="card e8-comm-card">
+      <div class="e8-comm-card-head">
+        <div><h3>Private Admin</h3><p>Only you + Admin · private support channel</p></div>
+        <span class="e8-comm-badge private">PRIVATE</span>
+      </div>
+      <div class="e8-comm-feed" id="dmL"></div>
+      <div class="e8-comm-compose">
+        <form id="fDm"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message Admin privately"><button class="btn">Send</button></form>
+        <div class="e8-comm-admin-note">Use this channel for private issues, corrections, payment questions, or account support.</div>
+      </div>
+    </div>
+  </div>
+</section>
 <section id="vWithdraw" hidden>
   <h2>Payments</h2>
   <div class="grid e8-wallet-stats" id="e8WStats"></div>
@@ -265,7 +317,12 @@ async function enter(){
  $('auth').hidden=true;$('app').hidden=false;$('who').textContent=p.name;MYN=p.name;$('pNm').textContent=p.name;
  const beat=()=>sb.rpc('touch');(window.T||[]).forEach(clearInterval);beat();load();window.T=[setInterval(beat,6e4),setInterval(load,8000)]}
 $('out').onclick=async()=>{await sb.auth.signOut({scope:'local'});location.reload()};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['vReq','vRep','vChat','vDm','vWithdraw','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);if(b.dataset.t==='vReq')load();if(b.dataset.t==='vChat')$('chL').scrollTop=1e9;if(b.dataset.t==='vDm')$('dmL').scrollTop=1e9});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+ ['vReq','vRep','vComm','vWithdraw','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);
+ if(b.dataset.t==='vReq')load();
+ if(b.dataset.t==='vComm'){setTimeout(()=>{ $('chL').scrollTop=1e9; $('dmL').scrollTop=1e9; },0);}
+});
 async function load(){
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  try{await sb.rpc('close_expired_lists')}catch(e){}
@@ -322,11 +379,17 @@ document.addEventListener('click',async e=>{const t=e.target;if(!t.dataset.s)ret
 /* auto-lock the moment a deadline passes (no refresh needed) */
 setInterval(()=>{if(!D.lists.length)return;const k=D.lists.map(lstOpen).join();if(k!==window._lk){window._lk=k;if(!$('app').hidden)draw()}},1000);
 $('fChat').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;
- const{error}=await sb.from('messages').insert({supplier_id:me,from_admin:false,body});if(!error){e.target.reset();load()}};
+ const{error}=await sb.from('messages').insert({supplier_id:me,from_admin:false,body});
+ if(error){$('rMsg').textContent='Group message failed: '+error.message;return}
+ e.target.reset();load();
+};
 $('avB').onclick=()=>$('avF').click();
 $('avF').onchange=async e=>{const f=e.target.files[0];e.target.value='';await avSave(f,me,m=>$('rMsg').textContent=m);load()};
 $('fDm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;
- const{error}=await sb.from('dms').insert({supplier_id:me,from_admin:false,body});if(!error){e.target.reset();load()}};
+ const{error}=await sb.from('dms').insert({supplier_id:me,from_admin:false,body});
+ if(error){$('rMsg').textContent='Private Admin message failed: '+error.message;return}
+ e.target.reset();load();
+};
 </script><script id="e8-withdrawal-supplier">
 (function(){
 'use strict';
