@@ -663,7 +663,7 @@ async function renderSup(){
  <td>${e.pay==='PARTIALLY PAID'? `<input type="number" step="0.01" value="${e.paid||0}" data-paid="${e.id}" style="width:100px;padding:6px">`:php(paidOf(e))}</td><td class="o ${owed(e)?'neg':'pos'}">${php(owed(e))}</td><td>${inp('date',e,e.date||'','date','130px')}</td><td><button class="sm" data-de="${e.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">No supplier items yet.</td></tr>';
  $('tProf').innerHTML=S.profs.length?S.profs.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.method)}</td><td>${esc(p.details)}</td><td>${esc(p.notes)}</td><td>${php(S.ents.filter(e=>e.sup.toLowerCase()===p.name.toLowerCase()).reduce((t,e)=>t+owed(e),0))}</td><td><button class="sm" data-dp="${p.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">No local supplier profiles. Registered suppliers are synchronized automatically.</td></tr>';
  profRender();
- await window.e8RefreshRegisteredSuppliers();
+ if(window.e8RefreshRegisteredSuppliers)await window.e8RefreshRegisteredSuppliers(true);
 }
 const TIER=/(^|\s)(\d+(?:\.\d+)?)(ms|b|m|k)(\+?)(?=\s|$)/i;
 function parseStock(txt,def){
