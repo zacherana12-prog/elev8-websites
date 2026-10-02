@@ -286,7 +286,7 @@ $('fDm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.tr
 function E(id){return document.getElementById(id)}
 function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 async function loadPaySupplier(){
- if(!window.sb||!window.me)return;
+ if(typeof sb==='undefined'||!sb||typeof me==='undefined'||!me)return;
  var z=await Promise.all([sb.from('responses').select('request_id,qty,rate,status').eq('supplier_id',me),sb.from('requests').select('id,rate'),sb.from('withdrawal_availability').select('*').eq('supplier_id',me).maybeSingle(),sb.from('withdrawal_requests').select('*').eq('supplier_id',me).order('created_at',{ascending:false})]);
  if(z.some(function(x){return x.error}))return;
  var rates=new Map(z[1].data.map(function(x){return [x.id,Number(x.rate||0)]})),earned=z[0].data.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Number(x.qty||0)*Number(x.rate!=null?x.rate:(rates.get(x.request_id)||0))},0),wr=z[3].data,requested=wr.reduce(function(t,x){return t+Number(x.amount||0)},0),balance=Math.max(0,earned-requested),v=z[2].data||{status:'not_ready'},ready=v.status==='ready'||(v.status==='scheduled'&&v.ready_at&&new Date(v.ready_at)<=new Date()),pending=wr.some(function(x){return x.status==='pending'});
