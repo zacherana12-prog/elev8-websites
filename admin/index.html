@@ -417,9 +417,9 @@ button,a,input,select,textarea{touch-action:manipulation}
 }
 
 </style>
-</head><body class="e8admin">
+<style id="e8-payments-ui">#e8PayAvail td,#e8PayReq td{vertical-align:middle}.e8pay-ready{color:#72f0a8}.e8pay-not{color:#ff8b9e}.e8pay-sched{color:#ffd86b}#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style></head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
-<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
+<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
 <main>
 <section id="dash" class="view on"><h2>Total Performance</h2><div class="grid" id="stats"></div></section>
 
@@ -433,7 +433,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 <div class="card wrap"><h3>Quantity breakdown</h3><table style="min-width:520px"><thead><tr><th>Item</th><th>Total</th><th>Listed</th><th>Sold</th><th>Delivered</th><th>Available</th><th id="qCh" hidden>Cancelled</th></tr></thead><tbody id="tQty"></tbody></table><div style="color:var(--mu);font-size:12px;padding-top:8px">Sold = Sold + Pending Delivery &middot; Delivered = Delivered + Completed &middot; Available = Available + Unlisted</div></div>
 <div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div></section>
 
-<section id="sup" class="view"><h2>Supplier Report</h2><div class="grid" id="supStats"></div>
+<section id="payments" class="view"><h2>Payments</h2><div id="e8PayMsg" style="color:var(--cy);font-size:12px;min-height:18px;margin-bottom:8px"></div><div class="card wrap"><h3>Withdrawal availability</h3><p style="color:var(--mu);font-size:12px">Set whether each supplier can withdraw now, keep funds unavailable, or schedule a date and time when withdrawals open.</p><div style="overflow:auto"><table style="min-width:980px"><thead><tr><th>Supplier</th><th>Withdrawable balance</th><th>Availability</th><th>Ready date</th><th>Admin note</th><th></th></tr></thead><tbody id="e8PayAvail"></tbody></table></div></div><div class="card wrap" style="margin-top:12px"><h3>Withdrawal requests</h3><div style="overflow:auto"><table style="min-width:850px"><thead><tr><th>Supplier</th><th>Amount</th><th>Submitted</th><th>Status</th><th>Completed</th><th></th></tr></thead><tbody id="e8PayReq"></tbody></table></div></div></section><section id="sup" class="view"><h2>Supplier Report</h2><div class="grid" id="supStats"></div>
 <div class="card"><h3>Paste stock</h3>
 <textarea id="pTxt" rows="7" placeholder="Maurin:&#10;3x 1B Gym Bros 840&#10;2x Celularcini 420&#10;Charles:&#10;5x 1B Ketupat 300"></textarea>
 <div style="display:flex;gap:10px;align-items:end;margin-top:10px;flex-wrap:wrap"><label style="flex:1;min-width:200px">Supplier (only used if the paste has no "Name:" line)<input id="pDef" list="supl"></label><button class="btn" id="pBtn" type="button">Add pasted stock</button></div>
@@ -1551,4 +1551,40 @@ tbody tr:hover{background:rgba(255,211,78,.035)!important}
 })();
 </script>
 
-</body></html>
+<script id="e8-withdrawal-admin">
+(function(){
+function E(id){return document.getElementById(id)}
+function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function X(v){var d=document.createElement('div');d.textContent=v==null?'':v;return d.innerHTML}
+async function loadPayAdmin(){
+ if(!window.sb)return;
+ var z=await Promise.all([sb.from('profiles').select('id,name').eq('role','supplier').order('name'),sb.from('withdrawal_availability').select('*'),sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),sb.from('responses').select('id,supplier_id,request_id,qty,rate,status')]);
+ if(z.some(function(x){return x.error}))return;
+ var prof=z[0].data,av=z[1].data,wr=z[2].data,resp=z[3].data,ids=[...new Set(resp.filter(function(x){return x.status==='collected'}).map(function(x){return x.request_id}))],rq=[];
+ if(ids.length){var q=await sb.from('requests').select('id,rate').in('id',ids);rq=q.data||[]}
+ var rates=new Map(rq.map(function(x){return [x.id,Number(x.rate||0)]})),bal={};
+ resp.forEach(function(x){if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Number(x.qty||0)*Number(x.rate!=null?x.rate:(rates.get(x.request_id)||0))});
+ wr.forEach(function(x){bal[x.supplier_id]=(bal[x.supplier_id]||0)-Number(x.amount||0)});
+ var am=new Map(av.map(function(x){return [x.supplier_id,x]}));
+ E('e8PayAvail').innerHTML=prof.map(function(p){
+  var v=am.get(p.id)||{status:'not_ready',ready_at:'',note:''},dt=v.ready_at?new Date(v.ready_at).toISOString().slice(0,16):'';
+  return '<tr><td><b>'+X(p.name)+'</b></td><td>'+P(Math.max(0,bal[p.id]||0))+'</td><td><select data-wa="'+p.id+'"><option value="not_ready" '+(v.status==='not_ready'?'selected':'')+'>Not ready</option><option value="ready" '+(v.status==='ready'?'selected':'')+'>Ready to withdraw</option><option value="scheduled" '+(v.status==='scheduled'?'selected':'')+'>Scheduled</option></select></td><td><input type="datetime-local" data-wd="'+p.id+'" value="'+dt+'"></td><td><input data-wn="'+p.id+'" maxlength="120" value="'+X(v.note||'')+'" placeholder="Optional note"></td><td><button class="sm" data-ws="'+p.id+'">Save</button></td></tr>'
+ }).join('')||'<tr><td colspan="6" class="empty">No suppliers found.</td></tr>';
+ E('e8PayReq').innerHTML=wr.map(function(x){
+  var n=(prof.find(function(p){return p.id===x.supplier_id})||{}).name||'Supplier';
+  return '<tr><td>'+X(n)+'</td><td>'+P(x.amount)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><select data-wr="'+x.id+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="completed" '+(x.status==='completed'?'selected':'')+'>Completed</option></select></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td><td><button class="sm" data-wc="'+x.id+'">Save</button></td></tr>'
+ }).join('')||'<tr><td colspan="6" class="empty">No withdrawal requests yet.</td></tr>';
+}
+document.addEventListener('click',async function(e){
+ var d=e.target.dataset||{};
+ if(d.ws){var st=E('e8PayAvail').querySelector('[data-wa="'+d.ws+'"]').value,raw=E('e8PayAvail').querySelector('[data-wd="'+d.ws+'"]').value,note=E('e8PayAvail').querySelector('[data-wn="'+d.ws+'"]').value.trim(),ready=raw?new Date(raw).toISOString():null;
+  if(st==='scheduled'&&!ready){E('e8PayMsg').textContent='Choose a ready date for scheduled funds.';return}
+  var r=await sb.from('withdrawal_availability').upsert({supplier_id:d.ws,status:st,ready_at:ready,note:note,updated_at:new Date().toISOString()},{onConflict:'supplier_id'});
+  E('e8PayMsg').textContent=r.error?r.error.message:'Withdrawal availability saved.';loadPayAdmin()
+ }
+ if(d.wc){var st2=E('e8PayReq').querySelector('[data-wr="'+d.wc+'"]').value,done=st2==='completed'?new Date().toISOString():null,r2=await sb.from('withdrawal_requests').update({status:st2,completed_at:done}).eq('id',d.wc);E('e8PayMsg').textContent=r2.error?r2.error.message:'Withdrawal status updated.';loadPayAdmin()}
+});
+document.querySelector('[data-v="payments"]')?.addEventListener('click',function(){setTimeout(loadPayAdmin,0)});
+window.addEventListener('load',function(){setTimeout(loadPayAdmin,1500);setInterval(function(){if(E('payments')&&!E('payments').hidden)loadPayAdmin()},8000)});
+})();
+</script></body></html>
