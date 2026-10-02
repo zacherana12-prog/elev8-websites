@@ -806,6 +806,7 @@ async function rqLoad(){
  if(!me||me.role!=='admin'){rqLost('This browser is signed in as a supplier, not admin. Sign in with your admin email.');return}
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  $('rqWho').textContent='Signed in as '+session.user.email;R.me=session.user.id;rm('');
+ await sb.rpc('sync_registered_suppliers');
  await sb.rpc('close_expired_lists');
  const q=await Promise.all([sb.from('requests').select('*').order('created_at'),sb.from('responses').select('*'),sb.from('profiles').select('*').eq('role','supplier').order('name'),sb.from('messages').select('*').order('created_at'),sb.from('dms').select('*').order('created_at'),sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(50),sb.from('supplier_payment').select('*'),sb.from('payment_edit_requests').select('*').order('created_at',{ascending:false}),sb.from('updates').select('*').order('created_at',{ascending:false}),sb.from('buying_lists').select('*').order('created_at',{ascending:false})]);
  const bad=q.find(x=>x.error);if(bad){rm('Could not load: '+bad.error.message);return}
