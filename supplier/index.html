@@ -145,7 +145,7 @@ body{background:
 <style id="e8-typography">
 body,button,input,select,textarea{font-family:'Nunito Sans',system-ui,sans-serif!important}
 h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
-</style></head><body><div class="box">
+</style><style id="e8-payments-ui">#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style></head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
 <label>Account number<input name="pay_number" inputmode="numeric" maxlength="34" pattern="[0-9][0-9 \-]*" title="Numbers only" autocomplete="off"></label>
@@ -155,7 +155,7 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 
 <div id="app" hidden>
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="display:flex;align-items:center;gap:10px"><button class="sm" id="avB" type="button" title="Change photo" style="padding:2px;border-radius:50%"></button><input type="file" id="avF" accept="image/*" hidden><div><div class="logo">ELEV8 SUPPLIER PORTAL</div><small id="who" style="color:var(--mu)"></small></div></div><button class="sm" id="out">Sign out</button></div>
-<nav><button class="on" data-t="vReq">Buying</button><button data-t="vRep">Supplier Report</button><button data-t="vChat">Chat</button><button data-t="vDm">Message Admin</button><button data-t="vPay">Profile</button><button data-t="vUpd">Updates</button></nav>
+<nav><button class="on" data-t="vReq">Buying</button><button data-t="vRep">Supplier Report</button><button data-t="vChat">Chat</button><button data-t="vDm">Message Admin</button><button data-t="vWithdraw">Payments</button><button data-t="vPay">Profile</button><button data-t="vUpd">Updates</button></nav>
 
 <section id="vReq"><div class="card wrap"><h3>Buying</h3><div id="rMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div>
 <table><thead><tr><th>Item</th><th>Needed</th><th>Rate</th><th>Total Available</th><th>Still Needed</th><th>My Available Qty</th><th>My Status</th></tr></thead><tbody id="tReq"></tbody></table>
@@ -169,7 +169,7 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 
 <section id="vDm" hidden><div class="card"><h3>Direct message to Admin <small style="color:var(--mu);font-weight:400">private, only you and admin</small></h3><div id="dmL" style="max-height:50vh;overflow-y:auto"></div>
 <form id="fDm" style="display:flex;gap:8px;margin-top:10px"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message admin"><button class="btn">Send</button></form></div></section>
-<section id="vPay" hidden><div class="card"><h3>My profile <small style="color:var(--mu);font-weight:400;text-transform:none;letter-spacing:0">payment details are private, only you and admin</small></h3><p style="margin:0 0 12px">Name: <b id="pNm"></b></p><div id="payMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div><div id="payB"></div></div></section>
+<section id="vWithdraw" hidden><div class="card"><h3>Payments</h3><div id="e8WMsg" style="color:var(--cy);font-size:12px;min-height:18px"></div><div class="grid" id="e8WStats"></div><div id="e8WReady" style="margin:10px 0"></div><div id="e8WForm"></div></div><div class="card wrap" style="margin-top:12px"><h3>Withdrawal history</h3><table style="min-width:680px"><thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Completed</th></tr></thead><tbody id="e8WHistory"></tbody></table></div></section><section id="vPay" hidden><div class="card"><h3>My profile <small style="color:var(--mu);font-weight:400;text-transform:none;letter-spacing:0">payment details are private, only you and admin</small></h3><p style="margin:0 0 12px">Name: <b id="pNm"></b></p><div id="payMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div><div id="payB"></div></div></section>
 
 <section id="vUpd" hidden><div class="card"><h3>Updates <small style="color:var(--mu);font-weight:400">from admin</small></h3><div id="updL" style="max-height:70vh;overflow-y:auto"></div></div></section>
 </div></div>
@@ -208,7 +208,7 @@ async function enter(){
  $('auth').hidden=true;$('app').hidden=false;$('who').textContent=p.name;MYN=p.name;$('pNm').textContent=p.name;
  const beat=()=>sb.rpc('touch');(window.T||[]).forEach(clearInterval);beat();load();window.T=[setInterval(beat,6e4),setInterval(load,8000)]}
 $('out').onclick=async()=>{await sb.auth.signOut({scope:'local'});location.reload()};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['vReq','vRep','vChat','vDm','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);if(b.dataset.t==='vChat')$('chL').scrollTop=1e9;if(b.dataset.t==='vDm')$('dmL').scrollTop=1e9});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['vReq','vRep','vChat','vDm','vWithdraw','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);if(b.dataset.t==='vChat')$('chL').scrollTop=1e9;if(b.dataset.t==='vDm')$('dmL').scrollTop=1e9});
 async function load(){
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  try{await sb.rpc('close_expired_lists')}catch(e){}
@@ -272,4 +272,23 @@ $('avB').onclick=()=>$('avF').click();
 $('avF').onchange=async e=>{const f=e.target.files[0];e.target.value='';await avSave(f,me,m=>$('rMsg').textContent=m);load()};
 $('fDm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.trim();if(!body)return;
  const{error}=await sb.from('dms').insert({supplier_id:me,from_admin:false,body});if(!error){e.target.reset();load()}};
+</script><script id="e8-withdrawal-supplier">
+(function(){
+function E(id){return document.getElementById(id)}
+function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+async function loadPaySupplier(){
+ if(!window.sb||!window.me)return;
+ var z=await Promise.all([sb.from('responses').select('request_id,qty,rate,status').eq('supplier_id',me),sb.from('requests').select('id,rate'),sb.from('withdrawal_availability').select('*').eq('supplier_id',me).maybeSingle(),sb.from('withdrawal_requests').select('*').eq('supplier_id',me).order('created_at',{ascending:false})]);
+ if(z.some(function(x){return x.error}))return;
+ var rates=new Map(z[1].data.map(function(x){return [x.id,Number(x.rate||0)]})),earned=z[0].data.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Number(x.qty||0)*Number(x.rate!=null?x.rate:(rates.get(x.request_id)||0))},0),wr=z[3].data,requested=wr.reduce(function(t,x){return t+Number(x.amount||0)},0),balance=Math.max(0,earned-requested),v=z[2].data||{status:'not_ready'},ready=v.status==='ready'||(v.status==='scheduled'&&v.ready_at&&new Date(v.ready_at)<=new Date()),pending=wr.some(function(x){return x.status==='pending'});
+ E('e8WStats').innerHTML='<div class="stat" style="--c:var(--cy)"><small>AVAILABLE BALANCE</small><b>'+P(balance)+'</b></div><div class="stat" style="--c:var(--am)"><small>REQUESTED</small><b>'+P(requested)+'</b></div><div class="stat" style="--c:var(--gr)"><small>COLLECTED EARNINGS</small><b>'+P(earned)+'</b></div>';
+ var status=ready?'<span class="e8w-status" style="background:#72f0a81c;color:#72f0a8">FUNDS READY</span>':v.status==='scheduled'&&v.ready_at?'<span class="e8w-status" style="background:#ffd86b1c;color:#ffd86b">AVAILABLE '+new Date(v.ready_at).toLocaleString()+'</span>':'<span class="e8w-status" style="background:#ff8b9e1c;color:#ff8b9e">NOT AVAILABLE YET</span>';
+ E('e8WReady').innerHTML=status+(v.note?' <span style="color:var(--mu);font-size:12px">· '+String(v.note).replace(/[<>&"]/g,'')+'</span>':'');
+ E('e8WForm').innerHTML=ready?'<label>Withdrawal amount<input id="e8WAmount" type="number" min="0.01" max="'+balance.toFixed(2)+'" step="0.01" value="'+(balance>0?balance.toFixed(2):'')+'" placeholder="Enter amount"></label><button class="btn" id="e8WSubmit" type="button" '+((balance<=0||pending)?'disabled':'')+'>'+(pending?'Withdrawal pending':'Submit withdrawal ticket')+'</button>':'<div style="color:var(--mu);font-size:12px;padding-top:8px">You can submit a withdrawal ticket only when the admin makes your funds available.</div>';
+ E('e8WHistory').innerHTML=wr.map(function(x){return '<tr><td>'+new Date(x.created_at).toLocaleString()+'</td><td>'+P(x.amount)+'</td><td><span class="e8w-status">'+x.status.toUpperCase()+'</span></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td></tr>'}).join('')||'<tr><td colspan="4" class="empty">No withdrawal requests yet.</td></tr>';
+}
+document.addEventListener('click',async function(e){if(e.target.id!=='e8WSubmit')return;var amount=Number(E('e8WAmount').value);e.target.disabled=true;E('e8WMsg').textContent='Submitting withdrawal…';var r=await sb.rpc('request_withdrawal',{p_amount:amount});E('e8WMsg').textContent=r.error?r.error.message:'Withdrawal ticket submitted to admin.';loadPaySupplier()});
+document.querySelector('[data-t="vWithdraw"]')?.addEventListener('click',function(){setTimeout(loadPaySupplier,0)});
+window.addEventListener('load',function(){setTimeout(loadPaySupplier,1800);setInterval(function(){if(E('vWithdraw')&&!E('vWithdraw').hidden)loadPaySupplier()},8000)});
+})();
 </script></body></html>
