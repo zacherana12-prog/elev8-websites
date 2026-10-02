@@ -417,7 +417,14 @@ button,a,input,select,textarea{touch-action:manipulation}
 }
 
 </style>
-<style id="e8-payments-ui">#e8PayAvail td,#e8PayReq td{vertical-align:middle}.e8pay-ready{color:#72f0a8}.e8pay-not{color:#ff8b9e}.e8pay-sched{color:#ffd86b}#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style><style id="e8-performance-refine">
+<style id="e8-customization-ui">
+.e8-custom-row{display:grid;gap:5px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.018)}
+.e8-custom-row>small{font-family:var(--e8-mono,'JetBrains Mono',monospace);font-size:10px;color:var(--e8-muted,#aeb5c3);word-break:break-all}
+.e8-custom-row>b{font-size:15px;color:var(--e8-text,#fff)}
+.e8-custom-row label{font-size:12px}
+.e8-custom-row input:disabled{opacity:.45}
+@media(max-width:760px){#e8TabEditor,#e8InputEditor,#e8PlaceholderEditor{grid-template-columns:1fr!important}}
+</style><style id="e8-payments-ui">#e8PayAvail td,#e8PayReq td{vertical-align:middle}.e8pay-ready{color:#72f0a8}.e8pay-not{color:#ff8b9e}.e8pay-sched{color:#ffd86b}#e8WStats .stat{padding:11px 13px!important}#e8WStats .stat b{font-size:20px!important}.e8w-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}</style><style id="e8-performance-refine">
 .stat{padding:11px 13px!important;border-top:2px solid var(--c,var(--cy))!important;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))!important;min-height:82px!important}
 .stat small{font-family:'Nunito Sans',system-ui,sans-serif!important;font-size:10px!important;font-weight:800!important;letter-spacing:.07em!important;color:var(--mu)!important}
 .stat b{font-family:'Nunito',system-ui,sans-serif!important;font-size:21px!important;font-weight:800!important;letter-spacing:-.025em!important;line-height:1.05!important;margin-top:7px!important}
@@ -451,7 +458,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 <label>Status<select name="status"></select></label><label>Date Added<input name="added" type="date"></label>
 <label>Delivery Date<input name="delivery" type="datetime-local"></label><button class="btn">Add item</button><button class="sm" type="button" id="iMore" style="padding:10px">Add More</button><button class="btn" type="button" id="iAll" hidden>Save all</button></form><div id="iPend" style="margin-top:10px"></div><p style="color:var(--mu);font-size:12px;margin:10px 0 0">Cost and Selling Price are totals for the whole quantity. When only part of the quantity changes status, they are split in proportion.</p></div>
 <div class="card wrap"><h3>Quantity breakdown</h3><table style="min-width:520px"><thead><tr><th>Item</th><th>Total</th><th>Listed</th><th>Sold</th><th>Delivered</th><th>Available</th><th id="qCh" hidden>Cancelled</th></tr></thead><tbody id="tQty"></tbody></table><div style="color:var(--mu);font-size:12px;padding-top:8px">Sold = Sold + Pending Delivery &middot; Delivered = Delivered + Completed &middot; Available = Available + Unlisted</div></div>
-<div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Qty</th><th>Sold</th><th>Remaining</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div><div class="card wrap" id="e8SupplierInventoryPanel"><div class="e8-section-head"><h3>Supplier-linked inventory</h3><span>Live listed supplier stock</span></div><div style="overflow:auto"><table class="e8-ledger-table" style="min-width:980px"><thead><tr><th>Supplier</th><th>Item</th><th>On Hand</th><th>Sold</th><th>Remaining</th><th>Status</th><th>Cost</th><th>Selling</th><th>Account</th><th></th></tr></thead><tbody id="e8SupplierInventoryRows"></tbody></table></div></div></section>
+<div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Qty</th><th>Sold</th><th>Remaining</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div><div class="card wrap" id="e8SupplierInventoryPanel"><div class="e8-section-head"><h3>Supplier-linked inventory</h3><span>Live listed supplier stock</span></div><div style="overflow:auto"><table class="e8-ledger-table" style="min-width:980px"><thead><tr><th>Supplier</th><th>Item</th><th>On Hand</th><th>Sold</th><th>Remaining</th><th>Status</th><th>Cost</th><th>Selling</th><th>Account</th><th></th></tr></thead><tbody id="e8SupplierStockInventoryRows"></tbody></table></div></div></section>
 
 <section id="payments" class="view">
 <h2>Payments</h2><div id="e8PayMsg" style="color:var(--cy);font-size:12px;min-height:18px;margin-bottom:8px"></div>
@@ -518,6 +525,12 @@ Charles:
     </div>
   </div>
 </details>
+<div id="e8LegacyReportDom" hidden>
+  <div id="supStats"></div>
+  <table><tbody id="tSum"></tbody><tbody id="tEnt"></tbody><tbody id="tProf"></tbody></table>
+</div>
+
+</section>
 <section id="stock" class="view">
 <h2>Supplier Stock &amp; Inventory</h2>
 <div class="e8-report-toolbar">
@@ -545,15 +558,9 @@ Charles:
   <div style="overflow:auto">
     <table style="min-width:1000px">
       <thead><tr><th>Supplier</th><th>Item</th><th>Collected</th><th>Sold</th><th>On Hand</th><th>Status</th><th>Cost</th><th>Selling USD</th><th>Account</th><th></th></tr></thead>
-      <tbody id="e8SupplierInventoryRows"></tbody>
+      <tbody id="e8SupplierStockInventoryRows"></tbody>
     </table>
   </div>
-</div>
-</section>
-
-<div id="e8LegacyReportDom" hidden>
-  <div id="supStats"></div>
-  <table><tbody id="tSum"></tbody><tbody id="tEnt"></tbody><tbody id="tProf"></tbody></table>
 </div>
 </section>
 
@@ -597,12 +604,19 @@ Charles:
     </div>
   </form>
 </div>
-<div class="card">
-  <div class="e8-section-head"><h3>Navigation &amp; field customization</h3><span>Rename tabs, labels and placeholders without changing database field names.</span></div>
-  <div id="e8TabEditor" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px"></div>
-  <h3>Input labels</h3>
-  <div id="e8InputEditor" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"></div>
-  <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="e8LabelsSave" type="button">Save customization</button><span id="e8LabelsMsg" style="color:var(--cy);font-size:12px"></span></div>
+<div class="card" id="e8CustomizationPanel">
+  <div class="e8-section-head"><h3>Navigation &amp; field customization</h3><span>Customize only visible names. Database fields, permissions and workflow IDs stay unchanged.</span></div>
+  <div class="e8-section-head" style="margin-top:4px"><h3>Navigation names</h3><span>Rename the Admin sidebar items.</span></div>
+  <div id="e8TabEditor" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px"></div>
+  <div class="e8-section-head"><h3>Form field labels</h3><span>Rename the main Admin form labels.</span></div>
+  <div id="e8InputEditor" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px"></div>
+  <div class="e8-section-head"><h3>Placeholders</h3><span>Customize helper text inside inputs.</span></div>
+  <div id="e8PlaceholderEditor" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"></div>
+  <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button class="btn" id="e8LabelsSave" type="button">Save customization</button>
+    <button class="sm" id="e8LabelsReset" type="button">Reset names &amp; placeholders</button>
+    <span id="e8LabelsMsg" style="color:var(--cy);font-size:12px"></span>
+  </div>
 </div>
 <div class="card">
   <h3>Data health</h3>
@@ -1988,16 +2002,29 @@ function populateSuppliers(){
 async function loadSupplierStock(){
   if(typeof sb==='undefined'||!sb||typeof R==='undefined'||!R||!R.me)return;
   if(window.e8RefreshRegisteredSuppliers)await window.e8RefreshRegisteredSuppliers(false);
-  E('e8StockMsg').textContent='Synchronizing source submissions…';
-  var sync=await sb.rpc('sync_supplier_stock');
-  if(sync.error){E('e8StockMsg').textContent='Stock sync failed: '+sync.error.message;return}
+  E('e8StockMsg').textContent='Loading canonical supplier stock…';
   var q=await Promise.all([
     sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false}),
     sb.from('profiles').select('id,name').eq('role','supplier').order('name')
   ]);
-  if(q.some(function(x){return x.error})){E('e8StockMsg').textContent=(q.find(function(x){return x.error})||{}).error?.message||'Could not load supplier stock.';return}
-  stockCache=q[0].data||[];stockProfiles=q[1].data||[];populateSuppliers();renderSupplierStock();renderSupplierInventory();
-  E('e8StockMsg').textContent='Live supplier stock synced · '+new Date().toLocaleTimeString();
+  if(q[0].error||q[1].error){
+    E('e8StockMsg').textContent=(q[0].error||q[1].error).message||'Could not load supplier stock.';
+    return;
+  }
+  stockCache=q[0].data||[];stockProfiles=q[1].data||[];
+  populateSuppliers();renderSupplierStock();renderSupplierInventory();
+  E('e8StockMsg').textContent='Stock loaded · '+stockCache.length+' live records. Checking source synchronization…';
+  var sync=await sb.rpc('sync_supplier_stock');
+  if(sync.error){
+    E('e8StockMsg').textContent='Stock loaded ('+stockCache.length+' records) · sync warning: '+sync.error.message;
+    return;
+  }
+  var fresh=await sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false});
+  if(!fresh.error){
+    stockCache=fresh.data||[];
+    renderSupplierStock();renderSupplierInventory();
+  }
+  E('e8StockMsg').textContent='Live supplier stock synced · '+stockCache.length+' records · '+new Date().toLocaleTimeString();
 }
 function filteredStock(){
   var sid=E('e8StockSupplier')?.value||'',src=E('e8StockSource')?.value||'',st=E('e8StockStatus')?.value||'';
@@ -2087,40 +2114,68 @@ function esc8(v){return String(v==null?'':v).replace(/[&<>"']/g,function(x){retu
 function money8(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function ready(){return typeof sb!=='undefined'&&!!sb&&typeof R!=='undefined'&&!!R&&!!R.me}
 
-function labelKey(v){return 'label:'+String(v||'').trim().toLowerCase()}
+const NAV_CUSTOM_TARGETS=[
+ ['dash','Total Performance'],['inv','Inventory'],['sup','Supplier Report'],['stock','Supplier Stock'],
+ ['payments','Payments'],['req','Buying'],['chat','Group Chat'],['dm','Direct Messages'],
+ ['perm','Permissions'],['upd','Updates'],['settings','Customization'],['vault','Accounts & Passwords'],['data','Save & Export']
+];
+const FIELD_CUSTOM_TARGETS=[
+ ['#fItem [name="name"]','Item Name'],['#fItem [name="ms"]','M/s'],['#fItem [name="qty"]','Quantity'],
+ ['#fItem [name="cost"]','Capital / Cost PHP'],['#fItem [name="price"]','Selling Price USD'],['#fItem [name="account"]','Account'],
+ ['#fItem [name="status"]','Status'],['#fItem [name="added"]','Date Added'],['#fItem [name="delivery"]','Delivery Date'],
+ ['#fReq [name="title"]','List Name'],['#fReq [name="deadline"]','Deadline / Cut-off'],
+ ['#fEnt [name="sup"]','Supplier'],['#fEnt [name="item"]','Item'],['#fEnt [name="qty"]','Quantity'],
+ ['#fEnt [name="cost"]','Cost per Item PHP'],['#fEnt [name="date"]','Date Received'],['#fEnt [name="pay"]','Payment Status'],
+ ['#fEnt [name="paid"]','Amount Paid'],['#fVault [name="name"]','Account Name'],['#fVault [name="platform"]','Platform'],
+ ['#fVault [name="user"]','Username / Email'],['#fVault [name="pass"]','Password'],['#fVault [name="notes"]','Notes'],
+ ['#fLog [name="email"]','Admin Email'],['#fLog [name="password"]','Admin Password'],
+ ['#fAnn [name="body"]','Announcement'],['#fChat [name="body"]','Group Chat Message'],['#fDm [name="body"]','Direct Message']
+];
+const PLACEHOLDER_CUSTOM_TARGETS=[
+ ['#fItem [name="ms"]','e.g. 1.5M/s'],['#fReq [name="title"]','e.g. Weekly stock'],['#pTxt','Paste supplier stock here'],
+ ['#e8SoloTitle','e.g. Priority restock'],['#e8SoloInstructions','Task instructions'],['#fVault [name="platform"]','e.g. Roblox'],
+ ['#fVault [name="user"]','Username or email'],['#fVault [name="notes"]','Optional notes'],['#fAnn [name="body"]','Write an announcement'],
+ ['#fChat [name="body"]','Reply'],['#fDm [name="body"]','Message supplier']
+];
+function labelKey(v){return 'field:'+String(v||'').trim()}
 function placeholderKey(v){return 'placeholder:'+String(v||'').trim()}
 function firstTextNode(el){for(var i=0;i<el.childNodes.length;i++){if(el.childNodes[i].nodeType===3)return el.childNodes[i]}return null}
 function prepareTargets(){
- document.querySelectorAll('aside nav button[data-v]').forEach(function(b){if(!b.dataset.e8DefaultLabel)b.dataset.e8DefaultLabel=b.textContent.trim()});
- document.querySelectorAll('main label:not(#settings label)').forEach(function(l){var t=firstTextNode(l);if(t&&!l.dataset.e8DefaultLabel)l.dataset.e8DefaultLabel=t.nodeValue.trim()});
- document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){if(!i.dataset.e8DefaultPlaceholder)i.dataset.e8DefaultPlaceholder=i.getAttribute('placeholder')||''});
+ document.querySelectorAll('aside nav button[data-v]').forEach(function(b){
+  var d=NAV_CUSTOM_TARGETS.find(function(a){return a[0]===b.dataset.v});
+  if(d&&!b.dataset.e8DefaultLabel)b.dataset.e8DefaultLabel=d[1];
+ });
 }
 function applyLabels(){
  prepareTargets();
  var L=cfg.labels||{};
- document.querySelectorAll('aside nav button[data-v]').forEach(function(b){var d=b.dataset.e8DefaultLabel,k='tab:'+b.dataset.v;if(L[k])b.textContent=L[k];else b.textContent=d});
- document.querySelectorAll('main label:not(#settings label)').forEach(function(l){var t=firstTextNode(l),d=l.dataset.e8DefaultLabel,k=labelKey(d);if(t)t.nodeValue=L[k]||d});
- document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){var d=i.dataset.e8DefaultPlaceholder,k=placeholderKey(d);if(d)i.placeholder=L[k]||d});
+ document.querySelectorAll('aside nav button[data-v]').forEach(function(b){
+  var d=b.dataset.e8DefaultLabel||b.textContent.trim();b.textContent=L['nav:'+b.dataset.v]||d;
+ });
+ FIELD_CUSTOM_TARGETS.forEach(function(a){
+  var el=document.querySelector(a[0]),lab=el&&el.closest('label'),t=lab&&firstTextNode(lab);if(t)t.nodeValue=L[labelKey(a[0])]||a[1];
+ });
+ PLACEHOLDER_CUSTOM_TARGETS.forEach(function(a){
+  var el=document.querySelector(a[0]);if(el)el.placeholder=L[placeholderKey(a[0])]||a[1];
+ });
  renderCustomizationEditors();
 }
 function renderCustomizationEditors(){
- var tabs=E('e8TabEditor'),inputs=E('e8InputEditor');if(!tabs||!inputs)return;
+ var tabs=E('e8TabEditor'),inputs=E('e8InputEditor'),ph=E('e8PlaceholderEditor');if(!tabs||!inputs||!ph)return;
  var L=cfg.labels||{};
- var seen=new Set(),tabRows=[];
- document.querySelectorAll('aside nav button[data-v]').forEach(function(b){var k='tab:'+b.dataset.v;if(seen.has(k))return;seen.add(k);tabRows.push('<label>'+esc8(b.dataset.e8DefaultLabel)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||b.dataset.e8DefaultLabel)+'"></label>')});
- tabs.innerHTML=tabRows.join('');
- seen=new Set();var inputRows=[];
- document.querySelectorAll('main label:not(#settings label)').forEach(function(l){
-   var d=l.dataset.e8DefaultLabel,k=labelKey(d);if(!d||seen.has(k))return;seen.add(k);
-   inputRows.push('<label>'+esc8(d)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||d)+'"></label>');
- });
- document.querySelectorAll('main input[placeholder]:not(#settings input),main textarea[placeholder]:not(#settings textarea)').forEach(function(i){
-   var d=i.dataset.e8DefaultPlaceholder,k=placeholderKey(d);if(!d||seen.has(k))return;seen.add(k);
-   inputRows.push('<label>Placeholder · '+esc8(d)+'<input data-e8-label-key="'+k+'" value="'+esc8(L[k]||d)+'"></label>');
- });
- inputs.innerHTML=inputRows.join('');
+ tabs.innerHTML=NAV_CUSTOM_TARGETS.map(function(a){
+  var v=L['nav:'+a[0]]||a[1];
+  return '<div class="e8-custom-row"><small>Navigation key: '+esc8(a[0])+'</small><b>'+esc8(a[1])+'</b><label>Visible name<input data-e8-label-key="nav:'+esc8(a[0])+'" value="'+esc8(v)+'"></label></div>';
+ }).join('');
+ inputs.innerHTML=FIELD_CUSTOM_TARGETS.map(function(a){
+  var v=L[labelKey(a[0])]||a[1],present=!!document.querySelector(a[0]);
+  return '<div class="e8-custom-row"><small>'+esc8(a[0])+'</small><label>Visible label<input data-e8-label-key="'+esc8(labelKey(a[0]))+'" value="'+esc8(v)+'" '+(present?'':'disabled')+'></label></div>';
+ }).join('');
+ ph.innerHTML=PLACEHOLDER_CUSTOM_TARGETS.map(function(a){
+  var v=L[placeholderKey(a[0])]||a[1],present=!!document.querySelector(a[0]);
+  return '<div class="e8-custom-row"><small>'+esc8(a[0])+'</small><label>Placeholder<input data-e8-label-key="'+esc8(placeholderKey(a[0]))+'" value="'+esc8(v)+'" '+(present?'':'disabled')+'></label></div>';
+ }).join('');
 }
-
 async function loadCfg(){
  if(!ready())return;
  var q=await sb.from('admin_settings').select('value').eq('key','workspace').maybeSingle();
@@ -2270,8 +2325,13 @@ E('e8SettingsReset')?.addEventListener('click',async function(){
  await saveCfg({usd_php_rate:59.5,marketplace_fee_pct:15,payout_fee_pct:4,refresh_seconds:8,default_inventory_status:'AVAILABLE',dashboard_auto_refresh:true,labels:{}});
 });
 E('e8LabelsSave')?.addEventListener('click',async function(){
- var labels=Object.assign({},cfg.labels);document.querySelectorAll('[data-e8-label-key]').forEach(function(i){labels[i.dataset.e8LabelKey]=i.value.trim()||''});
- var ok=await saveCfg({labels:labels});if(ok)E('e8LabelsMsg').textContent='Labels saved everywhere.';
+ var labels=Object.assign({},cfg.labels);
+ document.querySelectorAll('[data-e8-label-key]').forEach(function(i){labels[i.dataset.e8LabelKey]=i.value.trim()||''});
+ var ok=await saveCfg({labels:labels});if(ok)E('e8LabelsMsg').textContent='Navigation, field labels and placeholders saved.';
+});
+E('e8LabelsReset')?.addEventListener('click',async function(){
+ var ok=await saveCfg({labels:{}});
+ if(ok)E('e8LabelsMsg').textContent='Defaults restored.';
 });
 E('e8SyncAll')?.addEventListener('click',async function(){
  if(!ready()){E('e8SettingsMsg').textContent='Sign in as Admin first.';return}
