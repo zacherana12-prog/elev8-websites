@@ -269,10 +269,25 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.query
 async function load(){
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  try{await sb.rpc('close_expired_lists')}catch(e){}
- const[a,b,c,d,x,n,pm,pr,up,bl]=await Promise.all([sb.from('requests').select('*').order('created_at'),sb.from('responses').select('*').eq('supplier_id',me),sb.rpc('totals'),sb.from('messages').select('*').order('created_at'),sb.from('dms').select('*').eq('supplier_id',me).order('created_at'),sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(20),sb.from('supplier_payment').select('*').eq('supplier_id',me).maybeSingle(),sb.from('payment_edit_requests').select('*').eq('supplier_id',me).order('created_at',{ascending:false}).limit(1),sb.from('updates').select('*').order('created_at',{ascending:false}).limit(50),sb.from('buying_lists').select('*')]);
+ const[a,b,c,d,x,n,pm,pr,up,bl,st]=await Promise.all([
+  sb.from('requests').select('*').order('created_at'),
+  sb.from('responses').select('*').eq('supplier_id',me),
+  sb.rpc('totals'),
+  sb.from('messages').select('*').order('created_at'),
+  sb.from('dms').select('*').eq('supplier_id',me).order('created_at'),
+  sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(20),
+  sb.from('supplier_payment').select('*').eq('supplier_id',me).maybeSingle(),
+  sb.from('payment_edit_requests').select('*').eq('supplier_id',me).order('created_at',{ascending:false}).limit(1),
+  sb.from('updates').select('*').order('created_at',{ascending:false}).limit(50),
+  sb.from('buying_lists').select('*'),
+  sb.from('supplier_stock_items').select('*').eq('supplier_id',me).order('updated_at',{ascending:false})
+ ]);
  if(c.status===401){lost('Your session ended. Please sign in again.');return}
- if(a.error||b.error||c.error||d.error||x.error)return;const an=n.error?[]:n.data;
- D={reqs:a.data,resp:b.data,tot:Object.fromEntries(c.data.map(x=>[x.request_id,+x.available])),msgs:d.data,dms:x.data,anns:an,payOK:!pm.error&&!pr.error,pay:pm.error?null:pm.data,per:pr.error?null:(pr.data[0]||null),upds:up.error?[]:up.data,lists:bl.error?[]:bl.data};draw()}
+ if(a.error||b.error||c.error||d.error||x.error)return;
+ const an=n.error?[]:n.data;
+ D={reqs:a.data,resp:b.data,tot:Object.fromEntries(c.data.map(x=>[x.request_id,+x.available])),msgs:d.data,dms:x.data,anns:an,payOK:!pm.error&&!pr.error,pay:pm.error?null:pm.data,per:pr.error?null:(pr.data[0]||null),upds:up.error?[]:up.data,lists:bl.error?[]:bl.data,stock:st.error?[]:st.data||[]};
+ draw()
+}
 function drawPay(){
  if(!D.payOK)return;const p=D.pay,r=D.per,B=$('payB'),sig=JSON.stringify([p,r]);if(B.dataset.sig===sig)return;B.dataset.sig=sig;
  const opt=v=>['GCash','Bank Transfer','Maya'].map(m=>`<option${m===v?' selected':''}>${m}</option>`).join(''),
@@ -379,30 +394,27 @@ function renderCustomForm(data){
   var items=[...E('e8CRows').querySelectorAll('.e8-custom-row')].map(function(r){return{item_name:r.querySelector('.e8-ci').value.trim(),quantity:Number(r.querySelector('.e8-cq').value),rate:Number(r.querySelector('.e8-cr').value)}}).filter(function(x){return x.item_name});
   if(!items.length){E('e8CMsg').textContent='Add at least one item.';return}
   this.disabled=true;E('e8CMsg').textContent='Submitting…';
-  var result=data?await sb.rpc('resubmit_custom_submission',{p_submission_id:data.id,p_supplier_status:E('e8CS').value,p_items:items}):await sb.rpc('request_custom_submission',{p_supplier_status:E('e8CS').value,p_items:items});
-  E('e8CMsg').textContent=result.error?result.error.message:'Submission sent to Admin for review.';if(!result.error){renderCustomForm(null);loadSupplierWorkflow()}
- };
-}
-async function loadSupplierWorkflow(){
+  var result=data?await sb.rpc('resubmit_custom_submission',{p_submission_id:data.id,p_supplier_status:E('e8CS').value,p_items:items}):await sb.rpc('request_custom_submission',{p_supplier_status:E('e8CS').value,p_items:iteasync function loadSupplierWorkflow(){
  if(typeof sb==='undefined'||!sb||typeof me==='undefined'||!me)return;
  var q=await Promise.all([
   sb.from('custom_submissions').select('*,custom_submission_items(*)').eq('supplier_id',me).order('created_at',{ascending:false}),
   sb.from('solo_tasks').select('*,solo_task_items(*)').eq('supplier_id',me).order('created_at',{ascending:false}),
-  sb.from('supplier_earnings_ledger').select('*').eq('supplier_id',me).order('created_at',{ascending:false})
+  sb.from('supplier_earnings_ledger').select('*').eq('supplier_id',me).order('created_at',{ascending:false}),
+  sb.from('supplier_stock_items').select('*').eq('supplier_id',me).order('updated_at',{ascending:false})
  ]);
  if(q.some(function(x){return x.error}))return;
- var cs=q[0].data||[],tasks=q[1].data||[],ledger=q[2].data||[];
+ var cs=q[0].data||[],tasks=q[1].data||[],ledger=q[2].data||[],stock=q[3].data||[];
+ var sm=new Map(stock.map(function(s){return[s.source_id,s]}));
+ var stockLabel=function(v){return ({submitted:'SUBMITTED',approved:'APPROVED',collected:'ON HAND',listed:'LISTED',partially_sold:'PARTIALLY SOLD',sold:'SOLD',cancelled:'CANCELLED'}[v]||String(v||'—').toUpperCase())};
  E('e8CustomList').innerHTML=cs.map(function(x){
   var total=(x.custom_submission_items||[]).reduce(function(t,i){return t+Number(i.quantity||0)*Number(i.rate||0)},0);
   var badge=x.review_status==='approved'?'t-approved':x.review_status==='denied'?'t-rejected':'t-pending';
-  return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>Submission · '+new Date(x.created_at).toLocaleString()+'</b><span class="tag '+badge+'">'+X(x.review_status.replace('_',' ').toUpperCase())+'</span></div><div style="font-size:12px;color:var(--mu);margin:5px 0">Supplier status: '+X(x.supplier_status)+' · Revision '+x.revision+' · '+M(total)+'</div>'+((x.custom_submission_items||[]).map(function(i){return '<div style="font-size:12px;padding:3px 0">'+X(i.item_name)+' × '+i.quantity+' @ '+M(i.rate)+'</div>'}).join(''))+(x.correction_message?'<div style="margin-top:6px;color:var(--am)">Admin correction: '+X(x.correction_message)+'</div>':'')+(x.review_status==='needs_correction'?'<button class="btn" style="margin-top:7px" data-c-edit="'+x.id+'">Correct &amp; Resubmit</button>':'')+'</div>'
+  return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>Submission · '+new Date(x.created_at).toLocaleString()+'</b><span class="tag '+badge+'">'+X(x.review_status.replace('_',' ').toUpperCase())+'</span></div><div style="font-size:12px;color:var(--mu);margin:5px 0">Supplier status: '+X(x.supplier_status)+' · Revision '+x.revision+' · '+M(total)+'</div>'+((x.custom_submission_items||[]).map(function(i){var ss=sm.get(i.id),stt=ss?stockLabel(ss.status):'SUBMITTED';return '<div style="font-size:12px;padding:5px 0;display:flex;justify-content:space-between;gap:8px;align-items:center"><span>'+X(i.item_name)+' × '+i.quantity+' @ '+M(i.rate)+'</span><span class="tag '+(ss&&ss.status==='cancelled'?'t-rejected':ss&&['approved','collected','listed','partially_sold','sold'].includes(ss.status)?'t-approved':'t-pending')+'">'+stt+'</span></div>'}).join(''))+(x.correction_message?'<div style="margin-top:6px;color:var(--am)">Admin correction: '+X(x.correction_message)+'</div>':'')+(x.review_status==='needs_correction'?'<button class="btn" style="margin-top:7px" data-c-edit="'+x.id+'">Correct &amp; Resubmit</button>':'')+'</div>'
  }).join('')||'<div class="empty">No custom submissions yet.</div>';
- E('e8SoloBox').hidden=!tasks.length;E('e8SoloList').innerHTML=tasks.map(function(t){
-  var can=t.status==='assigned'||t.status==='needs_correction';
-  return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+X(t.title)+'</b><span class="tag '+(t.status==='approved'||t.status==='completed'?'t-approved':t.status==='denied'?'t-rejected':'t-pending')+'">'+X(t.status.replace('_',' ').toUpperCase())+'</span></div><small style="color:var(--mu)">'+new Date(t.created_at).toLocaleString()+(t.deadline?' · Due '+new Date(t.deadline).toLocaleString():'')+'</small><p style="margin:7px 0">'+X(t.instructions||'')+'</p>'+((t.solo_task_items||[]).map(function(i){return '<div style="display:grid;grid-template-columns:1fr 80px 100px;gap:7px;align-items:end;margin:5px 0"><span>'+X(i.item_name)+' <small style="color:var(--mu)">requested '+i.quantity+' @ '+M(i.rate)+'</small></span><label>Submit Qty<input type="number" min="0" max="'+i.quantity+'" value="'+i.submitted_quantity+'" data-sqitem="'+i.id+'" '+(can?'':'disabled')+'></label><span></span></div>'}).join(''))+(t.correction_message?'<div style="color:var(--am);margin-top:6px">Admin correction: '+X(t.correction_message)+'</div>':'')+(can?'<button class="btn" style="margin-top:7px" data-s-submit="'+t.id+'">Submit Solo Task</button>':'')+'</div>'
- }).join('')||'<div class="empty">No solo tasks assigned.</div>';
-
- var balance=ledger.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0))},0);
+ E('e8SoloBox').hidden=!tasks.length;
+ E('e8SoloList').innerHTML=tasks.map(function(t){var can=t.status==='assigned'||t.status==='needs_correction';return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+X(t.title)+'</b><span class="tag '+(t.status==='approved'||t.status==='completed'?'t-approved':t.status==='denied'?'t-rejected':'t-pending')+'">'+X(t.status.replace('_',' ').toUpperCase())+'</span></div><small style="color:var(--mu)">'+new Date(t.created_at).toLocaleString()+(t.deadline?' · Due '+new Date(t.deadline).toLocaleString():'')+'</small><p style="margin:7px 0">'+X(t.instructions||'')+'</p>'+((t.solo_task_items||[]).map(function(i){return '<div style="display:grid;grid-template-columns:1fr 80px 100px;gap:7px;align-items:end;margin:5px 0"><span>'+X(i.item_name)+' <small style="color:var(--mu)">requested '+i.quantity+' @ '+M(i.rate)+'</small></span><label>Submit Qty<input type="number" min="0" max="'+i.quantity+'" value="'+i.submitted_quantity+'" data-sqitem="'+i.id+'" '+(can?'':'disabled')+'></label><span></span></div>'}).join(''))+(t.correction_message?'<div style="color:var(--am);margin-top:6px">Admin correction: '+X(t.correction_message)+'</div>':'')+(can?'<button class="btn" style="margin-top:7px" data-s-submit="'+t.id+'">Submit Solo Task</button>':'')+'</div>'}).join('')||'<div class="empty">No solo tasks assigned.</div>';
+}
+-Number(x.paid_amount||0))},0);
  var earned=ledger.filter(function(x){return ['collected','paid'].includes(x.status)}).reduce(function(t,x){return t+Number(x.total||0)},0);
 
 }
