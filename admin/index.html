@@ -1699,7 +1699,7 @@ E('e8SoloCreate')?.addEventListener('click',async function(){
  var x=await sb.rpc('create_solo_task',{p_supplier_id:sid,p_title:title,p_instructions:ins,p_deadline:dl,p_items:items});E('e8SoloMsg').textContent=x.error?x.error.message:'Solo task assigned.';if(!x.error){E('e8SoloTitle').value='';E('e8SoloInstructions').value='';E('e8SoloDeadline').value='';E('e8SoloRows').innerHTML='';addSoloRow();loadSolo()}
 });
 E('e8TargetedListCreate')?.addEventListener('click',async function(){
- var sid=E('e8SoloSup').value,title=prompt('Buying List title','Supplier-only Buying List');if(!title)return,dl=prompt('Deadline (YYYY-MM-DD HH:MM)','');
+ var sid=E('e8SoloSup').value,title=prompt('Buying List title','Supplier-only Buying List');if(!title)return;var dl=prompt('Deadline (YYYY-MM-DD HH:MM)','');
  if(!dl)return;var iso=new Date(dl).toISOString(),rows=[...E('e8SoloRows').querySelectorAll('.e8-solo-row')].map(function(r){return {item:r.querySelector('.e8-si').value.trim(),qty:Number(r.querySelector('.e8-sq').value),rate:Number(r.querySelector('.e8-sr').value)}}).filter(function(x){return x.item});
  if(!rows.length){adminNotice('Add at least one task item first.');return}
  var x=await sb.rpc('create_buying_list',{p_title:title,p_deadline:iso,p_items:rows,p_supplier_id:sid});adminNotice(x.error?x.error.message:'Supplier-only Buying List created.');rqLoad()
