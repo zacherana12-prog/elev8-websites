@@ -2214,4 +2214,121 @@ setInterval(async function(){
  if(now%(Math.max(4,Number(cfg.refresh_seconds||8))*1000)<1100)syncLocalInventory();
 },1000);
 })();
+</script><script id="e8-live-data-tools">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function P8(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function X8(v){return v==null?'':String(v)}
+function esc8r(v){return String(v==null?'':v).replace(/[&<>"']/g,function(x){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[x]})}
+function ready8r(){return typeof sb!=='undefined'&&!!sb&&typeof R!=='undefined'&&!!R&&!!R.me}
+function cfgRate(){
+ return Number(document.querySelector('#e8SettingsForm [name=usd_php_rate]')?.value||59.5)||59.5
+}
+async function liveReportData(){
+ if(!ready8r())throw new Error('Sign in as Admin first.');
+ var q=await Promise.all([
+  sb.from('inventory_items').select('*').order('updated_at',{ascending:false}),
+  sb.from('supplier_earnings_ledger').select('*').order('created_at',{ascending:false}),
+  sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false}),
+  sb.from('profiles').select('id,name').eq('role','supplier').order('name'),
+  sb.rpc('admin_dashboard_summary'),
+  sb.from('admin_settings').select('value').eq('key','workspace').maybeSingle()
+ ]);
+ var bad=q.find(function(x){return x.error});if(bad)throw bad.error;
+ return {inv:q[0].data||[],ledger:q[1].data||[],stock:q[2].data||[],profiles:q[3].data||[],summary:q[4].data||{},cfg:q[5].data?.value||{}};
+}
+function csv8(rows){
+ var q=function(v){var s=X8(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+ return '\uFEFF'+rows.map(function(r){return r.map(q).join(',')}).join('\r\n');
+}
+async function exportLive(kind){
+ try{
+  var d=await liveReportData(),rate=Number(d.cfg.usd_php_rate)||cfgRate(),market=Number(d.cfg.marketplace_fee_pct??15),payout=Number(d.cfg.payout_fee_pct??4),nm=new Map(d.profiles.map(function(p){return[p.id,p.name]}));
+  var grossPhp=Number(d.summary.sales_gross_usd||0)*rate,netPhp=grossPhp*(1-market/100)*(1-payout/100),salesCost=Number(d.summary.sales_cost||0),profit=netPhp-salesCost;
+  var sum=[
+   ['SALES GROSS',P8(grossPhp)],['SALES NET',P8(netPhp)],['REALIZED PROFIT',P8(profit)],
+   ['SOLD UNITS',Number(d.summary.inventory_sold_units||0)],['INVENTORY ON HAND',Number(d.summary.inventory_on_hand_units||0)],
+   ['INVENTORY CAPITAL',P8(d.summary.inventory_cost)],['SUPPLIER PAYABLE',P8(d.summary.supplier_payable)],
+   ['PENDING WITHDRAWALS',P8(d.summary.pending_withdrawals)],['OPEN BUYING NEED',Number(d.summary.buying_items_still_needed||0)],
+   ['REGISTERED SUPPLIERS',Number(d.summary.registered_suppliers||0)]
+  ];
+  var inv=[['Supplier','Item','Qty','Sold','Remaining','M/s','Account','Status','Cost PHP','Selling USD','Sold Gross PHP','Created','Updated']].concat(d.inv.map(function(x){
+   var g=Number(x.sold_quantity||0)*Number(x.selling_price_usd||0)*rate;
+   return[nm.get(x.supplier_id)||'',x.name,x.quantity,x.sold_quantity,Math.max(0,x.quantity-x.sold_quantity),x.ms||'',x.account||'',x.status,P8(x.cost),Number(x.selling_price_usd||0),P8(g),x.created_at,x.updated_at]
+  }));
+  var led=[['Supplier','Item','Qty','Rate','Total','Paid','Outstanding','Status','Source','Created']].concat(d.ledger.map(function(x){
+   return[nm.get(x.supplier_id)||'',x.item_name,x.quantity,Number(x.rate||0),Number(x.total||0),Number(x.paid_amount||0),Math.max(0,Number(x.total||0)-Number(x.paid_amount||0)),x.status,x.source_type,x.created_at]
+  }));
+  var stk=[['Supplier','Source','Item','Submitted','Approved','Collected','On Hand','Sold','Remaining','Status','Unit Cost','Listing Name','Selling USD','Inventory Account','M/s','Updated']].concat(d.stock.map(function(x){
+   return[nm.get(x.supplier_id)||'',x.source_type,x.item_name,x.submitted_quantity,x.approved_quantity,x.collected_quantity,x.on_hand_quantity,x.sold_quantity,x.on_hand_quantity,x.status,Number(x.unit_cost||0),x.listing_item_name||'',x.selling_price_usd==null?'':Number(x.selling_price_usd),x.inventory_account||'',x.listing_ms||'',x.updated_at]
+  }));
+  if(kind==='csv'){
+   var rows=[['ELEV8 LIVE REPORT',new Date().toLocaleString()],[],['SUMMARY'],...sum,[],['INVENTORY'],...inv,[],['SUPPLIER LEDGER'],...led,[],['SUPPLIER STOCK'],...stk];
+   await dl('elev8-live-report-'+today()+'.csv',csv8(rows),'Live CSV report');return;
+  }
+  if(kind==='xlsx'){
+   if(!window.XLSX){msg('Excel library did not load. Use CSV instead.');return}
+   var wb=XLSX.utils.book_new(),A=XLSX.utils.aoa_to_sheet;
+   XLSX.utils.book_append_sheet(wb,A([['Measure','Value'],...sum]),'Summary');
+   XLSX.utils.book_append_sheet(wb,A(inv),'Inventory');
+   XLSX.utils.book_append_sheet(wb,A(led),'Supplier Ledger');
+   XLSX.utils.book_append_sheet(wb,A(stk),'Supplier Stock');
+   await dl('elev8-live-report-'+today()+'.xlsx',XLSX.write(wb,{bookType:'xlsx',type:'array'}),'Live Excel report');return;
+  }
+  if(!window.jspdf||!window.jspdf.jsPDF||!window.jspdf.jsPDF.API.autoTable){msg('PDF library did not load. Use Excel or CSV instead.');return}
+  var doc=new jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}),H={fillColor:[139,92,246]};
+  doc.setFontSize(16);doc.text('ELEV8 LIVE REPORT',40,40);doc.setFontSize(9);doc.text(new Date().toLocaleString(),40,54);
+  doc.autoTable({startY:66,head:[['Measure','Value']],body:sum,styles:{fontSize:8},headStyles:H});
+  [[ 'Inventory',inv],[ 'Supplier Ledger',led],[ 'Supplier Stock',stk]].forEach(function(sec){var y=doc.lastAutoTable.finalY+24;if(y>500){doc.addPage();y=40}doc.setFontSize(12);doc.text(sec[0],40,y);doc.autoTable({startY:y+6,head:[sec[1][0]],body:sec[1].slice(1),styles:{fontSize:7},headStyles:H})});
+  await dl('elev8-live-report-'+today()+'.pdf',doc.output('arraybuffer'),'Live PDF report');
+ }catch(e){msg('Live report error: '+(e.message||e))}
+}
+function renderDataLive(){
+ var sel=E('dSup');if(!sel)return;
+ var old=sel.value,ps=(typeof R!=='undefined'&&R.profs||[]).filter(function(p){return p.role==='supplier'});
+ sel.innerHTML=ps.length?ps.map(function(p){return '<option value="'+esc8r(p.id)+'">'+esc8r(p.name)+'</option>'}).join(''):'<option value="">No suppliers</option>';
+ if(old&&ps.some(function(p){return p.id===old}))sel.value=old;
+ if(E('bk'))E('bk').innerHTML='Live data is stored in Supabase. '+bkLine();
+}
+renderData=renderDataLive;
+
+E('bC').onclick=function(){exportLive('csv')};
+E('bX').onclick=function(){exportLive('xlsx')};
+E('bP').onclick=function(){exportLive('pdf')};
+
+E('bReset').onclick=function(){
+ ask('Reset live operational data?','This permanently removes operational records in the Supabase batch: inventory, supplier stock, buying lists, responses, supplier earnings, withdrawals and task/chat activity. Supplier Auth accounts, profiles, payment profiles and the password vault are preserved. Completed withdrawals will block the reset for safety.','Reset live data',async function(){
+  if(!ready8r()){msg('Sign in as Admin first.');return}
+  try{
+   var started=new Date('1970-01-01T00:00:00Z').toISOString(),a=await sb.rpc('create_data_batch',{p_name:'Admin full operational reset',p_started_at:started});
+   if(a.error)throw a.error;
+   var b=await sb.rpc('close_data_batch',{p_batch_id:a.data});if(b.error)throw b.error;
+   var z=await sb.rpc('reset_data_batch',{p_batch_id:a.data,p_confirmation:'RESET'});if(z.error)throw z.error;
+   S.items=[];S.ents=[];S.profs=[];save();renderAll();
+   await sb.rpc('sync_registered_suppliers');await sb.rpc('sync_supplier_stock');
+   if(window.e8SyncInventory)await window.e8SyncInventory();if(window.e8LoadLiveDashboard)await window.e8LoadLiveDashboard();
+   msg('Live operational data reset successfully. Supplier accounts and profiles were preserved.');
+  }catch(e){msg('Live reset blocked or failed: '+(e.message||e))}
+ });
+};
+
+E('bDel').onclick=function(){
+ var sid=E('dSup')?.value,ps=(typeof R!=='undefined'&&R.profs||[]).filter(function(p){return p.role==='supplier'}),p=ps.find(function(x){return x.id===sid});
+ if(!p){msg('No registered supplier selected.');return}
+ ask('Clear '+p.name+'?','This clears the supplier’s operational data, stock, earnings, requests and submissions while preserving the Auth account, supplier profile and payment profile.','Clear supplier data',async function(){
+  if(!ready8r()){msg('Sign in as Admin first.');return}
+  var x=await sb.rpc('clear_supplier_data',{target_supplier_id:p.id});
+  if(x.error){msg('Could not clear supplier: '+x.error.message);return}
+  S.ents=S.ents.filter(function(e){return String(e.sup||'').toLowerCase()!==String(p.name||'').toLowerCase()});
+  S.items=S.items.filter(function(e){return String(e.supplier_id||'')!==p.id});
+  S.profs=S.profs.filter(function(e){return String(e.id||'')!==p.id});
+  save();renderAll();if(window.e8SyncInventory)await window.e8SyncInventory();if(window.e8LoadLiveDashboard)await window.e8LoadLiveDashboard();
+  msg(p.name+' operational data cleared. Account and profile preserved.');
+ });
+};
+E('data')?.addEventListener('click',function(){setTimeout(renderDataLive,0)});
+window.addEventListener('load',function(){setTimeout(renderDataLive,2300)});
+setInterval(function(){if(ready8r())renderDataLive()},8000);
+})();
 </script></body></html>
