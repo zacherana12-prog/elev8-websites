@@ -129,9 +129,20 @@ aside nav button.on{background:linear-gradient(90deg,#35e0ff1f,#ff3b9a0f 80%,tra
 #auth::before{content:'';position:absolute;top:0;left:0;right:0;height:130px;background:var(--photo) center 40%/cover;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}
 #auth>*{position:relative}
 #modal>*{backdrop-filter:blur(14px)}
+
+/* ELEV8 animated site background */
+html{background:#05060a!important}
+body{background:transparent!important;position:relative;isolation:isolate}
+#e8SiteBg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-4;pointer-events:none;opacity:.34;filter:brightness(.38) saturate(.88) contrast(1.04);transform:scale(1.02)}
+#e8SiteBgShade{position:fixed;inset:0;z-index:-3;pointer-events:none;background:
+  radial-gradient(70% 55% at 78% 15%,rgba(85,92,255,.11),transparent 70%),
+  radial-gradient(55% 45% at 10% 88%,rgba(255,55,165,.08),transparent 72%),
+  linear-gradient(180deg,rgba(4,6,12,.48),rgba(4,6,12,.78))}
+@media(prefers-reduced-motion:reduce){#e8SiteBg{display:none!important}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-</head><body><div class="box">
+</head><body><video id="e8SiteBg" autoplay muted loop playsinline preload="auto" aria-hidden="true"><source src="./assets/siteeeee.mp4" type="video/mp4"></video><div id="e8SiteBgShade" aria-hidden="true"></div><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
 <label>Account number<input name="pay_number" inputmode="numeric" maxlength="34" pattern="[0-9][0-9 \-]*" title="Numbers only" autocomplete="off"></label>
