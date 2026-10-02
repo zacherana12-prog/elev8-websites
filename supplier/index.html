@@ -211,10 +211,6 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
       </tr></thead><tbody id="e8SupplierStockRows"></tbody></table>
     </div>
   </div>
-  <div id="e8LegacySupplierReportDom" hidden>
-    <div id="stats"></div>
-    <table><tbody id="tRep"></tbody></table>
-  </div>
 </section>
 
 <section id="vChat" hidden><div class="card" id="annC" hidden><h3>📢 Announcements</h3><div id="annL" style="max-height:30vh;overflow-y:auto"></div></div><div class="card"><h3>Group Chat <small style="color:var(--mu);font-weight:400">all suppliers + admin</small></h3><div id="chL" style="max-height:50vh;overflow-y:auto"></div>
@@ -310,8 +306,6 @@ function draw(){
  document.querySelectorAll('#tReq [data-q]').forEach(i=>{const q=D.reqs.find(x=>x.id===i.dataset.q),r=q&&mine(q.id),lk=!q||!reqOpen(q)||(r&&r.status!=='pending');i.disabled=lk;const b=document.querySelector(`#tReq [data-s="${i.dataset.q}"]`);if(b)b.disabled=lk});
  const done=D.resp.filter(r=>r.status!=='pending').map(r=>({...r,item:(D.reqs.find(q=>q.id===r.request_id)||{}).item||'',tot:r.qty*r.rate})).sort((x,y)=>String(y.collected_at).localeCompare(x.collected_at));
  const sum=f=>done.filter(f).reduce((t,r)=>t+r.tot,0),owed=sum(r=>r.status==='collected'),paid=sum(r=>r.status==='paid');
- $('stats').innerHTML=stat('ITEMS COLLECTED',done.reduce((t,r)=>t+r.qty,0),'var(--cy)')+stat('TOTAL VALUE',php(owed+paid),'var(--bl)')+stat('AMOUNT OWED',php(owed),owed?'var(--rd)':'var(--gr)')+stat('PAID',php(paid),'var(--gr)');
- $('tRep').innerHTML=done.length?done.map(r=>`<tr><td>${esc((r.collected_at||'').slice(0,10))}</td><td>${esc(r.item)}</td><td>${r.qty}</td><td>${php(+r.rate)}</td><td>${php(r.tot)}</td><td><span class="tag t-${r.status}">${r.status==='paid'?'PAID':'COLLECTED · UNPAID'}</span></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nothing collected yet.</td></tr>';
  $('annC').hidden=!D.anns.length;$('annL').innerHTML=D.anns.map(a=>`<div style="border:1px solid var(--am);background:#d9c27a14;border-radius:10px;padding:10px 12px;margin:8px 0"><small style="color:var(--am);display:flex;justify-content:space-between;gap:8px;align-items:center"><span>📢 Announcement · ${esc(new Date(a.created_at).toLocaleString())}</span></small><div style="white-space:pre-wrap;margin-top:4px">${esc(a.body)}</div></div>`).join('');
  const L=$('chL'),atEnd=L.scrollHeight-L.scrollTop-L.clientHeight<40;
  L.innerHTML=D.msgs.map(m=>{const mine=m.supplier_id===me;return`<div style="display:flex;gap:8px;margin:8px 0;align-items:flex-end;flex-direction:${mine?'row-reverse':'row'}">${avh(m.supplier_id,m.sender_name)}<div style="max-width:78%;text-align:${mine?'right':'left'}"><small style="color:var(--mu);display:block">${mine?'You':esc(m.sender_name||'Supplier')}${m.from_admin&&!mine?' (admin)':''}</small><span style="display:inline-block;padding:7px 10px;border-radius:10px;white-space:pre-wrap;text-align:left;background:${m.from_admin?'#9b9ba133':mine?'#d9d9dc33':'#ffffff14'}">${esc(m.body)}</span></div></div>`}).join('')||'<div class="empty">No messages yet.</div>';
