@@ -154,6 +154,17 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 .stat[style*="--c:var(--am)"]{background:linear-gradient(135deg,rgba(255,216,107,.11),rgba(255,216,107,.025))!important}
 .stat[style*="--c:var(--rd)"]{background:linear-gradient(135deg,rgba(255,139,158,.11),rgba(255,139,158,.025))!important}
 .stat[style*="--c:var(--bl)"],.stat[style*="--c:var(--pu)"],.stat[style*="--c:var(--pk)"]{background:linear-gradient(135deg,rgba(184,184,189,.09),rgba(184,184,189,.02))!important}
+</style><style id="e8-report-v2">
+.e8-report-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))}
+.e8-report-toolbar>div{display:grid;gap:4px}.e8-report-toolbar strong{font-size:14px}.e8-report-toolbar span{font-size:12px;color:var(--mu)}
+.e8-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.e8-section-head span{font-size:11px;color:var(--mu)}
+.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
+.e8-compact-panel summary{cursor:pointer;padding:13px 2px;font-weight:700;color:var(--e-yellow,#ffd84d);list-style:none}.e8-compact-panel summary::-webkit-details-marker{display:none}.e8-compact-panel summary::after{content:'+';float:right;color:var(--mu)}.e8-compact-panel[open] summary::after{content:'−'}
+.e8-management-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 0 14px}.e8-management-grid .card{height:100%}
+.e8-wallet-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.e8-wallet-stats .stat{min-height:96px!important}
+.e8-wallet-action{max-width:760px}.e8-wallet-action #e8WForm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+@media(max-width:900px){.e8-management-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.e8-management-grid,.e8-wallet-stats{grid-template-columns:1fr}.e8-wallet-action #e8WForm{grid-template-columns:1fr}}
 </style></head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
@@ -170,15 +181,48 @@ h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
 <table><thead><tr><th>Item</th><th>Needed</th><th>Rate</th><th>Total Available</th><th>Still Needed</th><th>My Available Qty</th><th>My Status</th></tr></thead><tbody id="tReq"></tbody></table>
 <p style="color:var(--mu);font-size:12px;margin:10px 0 0">Total Available is the combined stock from all suppliers. Your quantity stays Pending until the admin marks it Collected. You can submit or change quantities only while a Buying List is Active and before its deadline.</p></div><div class="card" id="e8CustomBox"><h3>Custom Submission</h3><p style="color:var(--mu);font-size:12px;margin-top:0">For items not included in a Buying List or stock request. Your submission is reviewed by Admin before it affects your balance.</p><div id="e8CustomForm"></div><div id="e8CustomList" style="margin-top:10px"></div></div><div class="card" id="e8SoloBox"><h3>My Solo Task</h3><div id="e8SoloList"></div></div></section>
 
-<section id="vRep" hidden><div class="grid" id="stats"></div><div class="card wrap"><h3>My collected stock &amp; payments</h3>
-<table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Payment</th></tr></thead><tbody id="tRep"></tbody></table></div></section>
+<section id="vRep" hidden>
+  <div class="e8-report-toolbar">
+    <div><strong>My supplier report</strong><span>Live earnings from approved and collected supplier work.</span></div>
+    <label>Source
+      <select id="e8RepFilter">
+        <option value="">All activity</option>
+        <option value="buying_list">Buying Lists</option>
+        <option value="custom_submission">Custom Submissions</option>
+        <option value="solo_task">Solo Tasks</option>
+        <option value="manual_entry">Manual Entries</option>
+      </select>
+    </label>
+  </div>
+  <div class="grid" id="e8SupplierReportStats"></div>
+  <div class="card wrap">
+    <div class="e8-section-head"><h3>Activity</h3><span id="e8SupplierReportMeta"></span></div>
+    <div style="overflow:auto">
+      <table class="e8-ledger-table"><thead><tr>
+        <th>Date</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Source</th><th>Status</th>
+      </tr></thead><tbody id="e8SupplierReportRows"></tbody></table>
+    </div>
+  </div>
+  <div id="e8LegacySupplierReportDom" hidden>
+    <div id="stats"></div>
+    <table><tbody id="tRep"></tbody></table>
+  </div>
+</section>
 
 <section id="vChat" hidden><div class="card" id="annC" hidden><h3>📢 Announcements</h3><div id="annL" style="max-height:30vh;overflow-y:auto"></div></div><div class="card"><h3>Group Chat <small style="color:var(--mu);font-weight:400">all suppliers + admin</small></h3><div id="chL" style="max-height:50vh;overflow-y:auto"></div>
 <form id="fChat" style="display:flex;gap:8px;margin-top:10px"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message"><button class="btn">Send</button></form></div></section>
 
 <section id="vDm" hidden><div class="card"><h3>Direct message to Admin <small style="color:var(--mu);font-weight:400">private, only you and admin</small></h3><div id="dmL" style="max-height:50vh;overflow-y:auto"></div>
 <form id="fDm" style="display:flex;gap:8px;margin-top:10px"><input name="body" maxlength="1000" required autocomplete="off" placeholder="Message admin"><button class="btn">Send</button></form></div></section>
-<section id="vWithdraw" hidden><div class="card"><h3>Payments</h3><div id="e8WMsg" style="color:var(--cy);font-size:12px;min-height:18px"></div><div class="grid" id="e8WStats"></div><div id="e8WReady" style="margin:10px 0"></div><div id="e8WForm"></div></div><div class="card wrap" style="margin-top:12px"><h3>Withdrawal history</h3><table style="min-width:680px"><thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Completed</th></tr></thead><tbody id="e8WHistory"></tbody></table></div></section><section id="vPay" hidden><div class="card"><h3>My profile <small style="color:var(--mu);font-weight:400;text-transform:none;letter-spacing:0">payment details are private, only you and admin</small></h3><p style="margin:0 0 12px">Name: <b id="pNm"></b></p><div id="payMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div><div id="payB"></div></div></section>
+<section id="vWithdraw" hidden>
+  <h2>Payments</h2>
+  <div class="grid e8-wallet-stats" id="e8WStats"></div>
+  <div class="card e8-wallet-action">
+    <div class="e8-section-head"><h3>Withdrawal</h3><span id="e8WState"></span></div>
+    <div id="e8WForm"></div>
+    <div id="e8WMsg" style="color:var(--cy);font-size:12px;min-height:16px;margin-top:8px"></div>
+  </div>
+</section><section id="vPay" hidden><div class="card"><h3>My profile <small style="color:var(--mu);font-weight:400;text-transform:none;letter-spacing:0">payment details are private, only you and admin</small></h3><p style="margin:0 0 12px">Name: <b id="pNm"></b></p><div id="payMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div><div id="payB"></div></div></section>
 
 <section id="vUpd" hidden><div class="card"><h3>Updates <small style="color:var(--mu);font-weight:400">from admin</small></h3><div id="updL" style="max-height:70vh;overflow-y:auto"></div></div></section>
 </div></div>
@@ -283,22 +327,32 @@ $('fDm').onsubmit=async e=>{e.preventDefault();const body=e.target.body.value.tr
  const{error}=await sb.from('dms').insert({supplier_id:me,from_admin:false,body});if(!error){e.target.reset();load()}};
 </script><script id="e8-withdrawal-supplier">
 (function(){
+'use strict';
 function E(id){return document.getElementById(id)}
 function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 async function loadPaySupplier(){
  if(typeof sb==='undefined'||!sb||typeof me==='undefined'||!me)return;
- var z=await Promise.all([sb.from('supplier_earnings_ledger').select('total,paid_amount,status').eq('supplier_id',me),sb.from('withdrawal_availability').select('*').eq('supplier_id',me).maybeSingle(),sb.from('withdrawal_requests').select('*').eq('supplier_id',me).order('created_at',{ascending:false})]);
+ var z=await Promise.all([
+  sb.rpc('supplier_wallet'),
+  sb.from('withdrawal_availability').select('*').eq('supplier_id',me).maybeSingle()
+ ]);
  if(z.some(function(x){return x.error}))return;
- var earned=z[0].data.filter(function(x){return ['collected','paid'].includes(x.status)}).reduce(function(t,x){return t+Number(x.total||0)},0),payable=z[0].data.filter(function(x){return x.status==='collected'}).reduce(function(t,x){return t+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0))},0),wr=z[2].data,requested=wr.reduce(function(t,x){return t+Number(x.amount||0)},0),balance=Math.max(0,payable-requested),v=z[1].data||{status:'not_ready'},ready=v.status==='ready'||(v.status==='scheduled'&&v.ready_at&&new Date(v.ready_at)<=new Date()),pending=wr.some(function(x){return x.status==='pending'});
- E('e8WStats').innerHTML='<div class="stat" style="--c:var(--cy)"><small>AVAILABLE BALANCE</small><b>'+P(balance)+'</b></div><div class="stat" style="--c:var(--am)"><small>REQUESTED</small><b>'+P(requested)+'</b></div><div class="stat" style="--c:var(--gr)"><small>COLLECTED EARNINGS</small><b>'+P(earned)+'</b></div>';
- var status=ready?'<span class="e8w-status" style="background:#72f0a81c;color:#72f0a8">FUNDS READY</span>':v.status==='scheduled'&&v.ready_at?'<span class="e8w-status" style="background:#ffd86b1c;color:#ffd86b">AVAILABLE '+new Date(v.ready_at).toLocaleString()+'</span>':'<span class="e8w-status" style="background:#ff8b9e1c;color:#ff8b9e">NOT AVAILABLE YET</span>';
- E('e8WReady').innerHTML=status+(v.note?' <span style="color:var(--mu);font-size:12px">· '+String(v.note).replace(/[<>&"]/g,'')+'</span>':'');
- E('e8WForm').innerHTML=ready?'<label>Withdrawal amount<input id="e8WAmount" type="number" min="0.01" max="'+balance.toFixed(2)+'" step="0.01" value="'+(balance>0?balance.toFixed(2):'')+'" placeholder="Enter amount"></label><button class="btn" id="e8WSubmit" type="button" '+((balance<=0||pending)?'disabled':'')+'>'+(pending?'Withdrawal pending':'Submit withdrawal ticket')+'</button>':'<div style="color:var(--mu);font-size:12px;padding-top:8px">You can submit a withdrawal ticket only when the admin makes your funds available.</div>';
- E('e8WHistory').innerHTML=wr.map(function(x){return '<tr><td>'+new Date(x.created_at).toLocaleString()+'</td><td>'+P(x.amount)+'</td><td><span class="e8w-status">'+x.status.toUpperCase()+'</span></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td></tr>'}).join('')||'<tr><td colspan="4" class="empty">No withdrawal requests yet.</td></tr>';
+ var w=(z[0].data&&z[0].data[0])||{balance:0,withdrawn:0},v=z[1].data||{status:'not_ready'},now=Date.now();
+ var ready=v.status==='ready'||(v.status==='scheduled'&&v.ready_at&&new Date(v.ready_at).getTime()<=now);
+ E('e8WStats').innerHTML='<div class="stat" style="--c:var(--cy)"><small>BALANCE</small><b>'+P(w.balance)+'</b></div><div class="stat" style="--c:var(--gr)"><small>WITHDRAWN</small><b>'+P(w.withdrawn)+'</b></div>';
+ var state=ready?'WITHDRAWALS AVAILABLE':v.status==='scheduled'&&v.ready_at?'AVAILABLE '+new Date(v.ready_at).toLocaleString():'WITHDRAWALS NOT AVAILABLE';
+ E('e8WState').textContent=state;
+ E('e8WForm').innerHTML=ready?'<label>Amount<input id="e8WAmount" type="number" min="0.01" max="'+Number(w.balance||0).toFixed(2)+'" step="0.01" value="'+(w.balance>0?Number(w.balance).toFixed(2):'')+'" placeholder="Enter amount"></label><button class="btn" id="e8WSubmit" type="button" '+(Number(w.balance)<=0?'disabled':'')+'>Withdraw</button>':'<div style="color:var(--mu);font-size:12px">Your withdrawal window is not open yet.</div>';
 }
-document.addEventListener('click',async function(e){if(e.target.id!=='e8WSubmit')return;var amount=Number(E('e8WAmount').value);e.target.disabled=true;E('e8WMsg').textContent='Submitting withdrawal…';var r=await sb.rpc('request_withdrawal',{p_amount:amount});E('e8WMsg').textContent=r.error?r.error.message:'Withdrawal ticket submitted to admin.';loadPaySupplier()});
+window.e8LoadPaySupplier=loadPaySupplier;
+document.addEventListener('click',async function(e){
+ if(e.target.id!=='e8WSubmit')return;
+ var amount=Number(E('e8WAmount').value);e.target.disabled=true;E('e8WMsg').textContent='Submitting withdrawal…';
+ var r=await sb.rpc('request_withdrawal',{p_amount:amount});
+ E('e8WMsg').textContent=r.error?r.error.message:'Withdrawal submitted.';loadPaySupplier();
+});
 document.querySelector('[data-t="vWithdraw"]')?.addEventListener('click',function(){setTimeout(loadPaySupplier,0)});
-window.addEventListener('load',function(){setTimeout(loadPaySupplier,1800);setInterval(function(){if(E('vWithdraw')&&!E('vWithdraw').hidden)loadPaySupplier()},8000)});
+window.addEventListener('load',function(){setTimeout(loadPaySupplier,1500);setInterval(function(){if(E('vWithdraw')&&!E('vWithdraw').hidden)loadPaySupplier()},8000)});
 })();
 </script><script id="e8-supplier-workflow">
 (function(){
@@ -365,32 +419,47 @@ document.addEventListener('click',async function(e){
 });
 addEventListener('load',function(){setTimeout(function(){renderCustomForm(null);loadSupplierWorkflow()},2200);setInterval(loadSupplierWorkflow,8000)});
 })();
+</script><script id="e8-supplier-report-v2">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function M(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function X(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
+var cache=[];
+function sourceName(v){return ({buying_list:'Buying List',custom_submission:'Custom Submission',solo_task:'Solo Task',manual_entry:'Manual Entry'}[v]||String(v||'—'))}
+async function loadSupplierReport(){
+ if(typeof sb==='undefined'||!sb||typeof me==='undefined'||!me||!E('e8SupplierReportRows'))return;
+ var q=await Promise.all([sb.from('supplier_earnings_ledger').select('*').eq('supplier_id',me).order('created_at',{ascending:false}),sb.rpc('supplier_wallet')]);
+ if(q.some(function(x){return x.error}))return;
+ cache=q[0].data||[];render();
+}
+function render(){
+ var f=E('e8RepFilter').value,rows=cache.filter(function(r){return !f||r.source_type===f}),w=(arguments[0]||null);
+ var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),collected=rows.filter(function(r){return r.status==='collected'}).reduce(function(t,r){return t+Math.max(0,Number(r.total||0)-Number(r.paid_amount||0))},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.filter(function(r){return r.status!=='cancelled'}).reduce(function(t,r){return t+Number(r.quantity||0)},0);
+ E('e8SupplierReportStats').innerHTML=stat('TOTAL VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(collected),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
+ E('e8SupplierReportRows').innerHTML=rows.map(function(r){return '<tr><td>'+new Date(r.created_at).toLocaleDateString()+'</td><td>'+X(r.item_name)+'</td><td>'+Number(r.quantity||0)+'</td><td>'+M(r.rate)+'</td><td>'+M(r.total)+'</td><td>'+X(sourceName(r.source_type))+'</td><td><span class="tag t-'+X(r.status)+'">'+X(String(r.status||'').toUpperCase())+'</span></td></tr>'}).join('')||'<tr><td colspan="7" class="empty">No supplier earnings yet.</td></tr>';
+ E('e8SupplierReportMeta').textContent=rows.length+' record'+(rows.length===1?'':'s');
+}
+E('e8RepFilter')?.addEventListener('change',render);
+window.e8LoadSupplierReport=loadSupplierReport;
+window.addEventListener('load',function(){setTimeout(loadSupplierReport,1400);});
+})();
 </script><script id="e8-live-sync">
 (function(){
-  const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests'];
-  let ch=null,timer=0,started=false;
-  function refresh(){
-    clearTimeout(timer);
-    timer=setTimeout(function(){
-      try{
-        if(typeof rqLoad==='function' && document.getElementById('rqApp') && !document.getElementById('rqApp').hidden) rqLoad();
-      }catch(e){}
-      try{
-        if(typeof load==='function' && document.getElementById('app') && !document.getElementById('app').hidden) load();
-      }catch(e){}
-      try{if(typeof loadSupplierWorkflow==='function')loadSupplierWorkflow()}catch(e){}
-    },300);
-  }
-  function start(){
-    if(started||typeof sb==='undefined'||!sb)return;
-    started=true;
-    ch=sb.channel('elev8-live-sync');
-    TABLES.forEach(function(table){
-      ch.on('postgres_changes',{event:'*',schema:'public',table:table},refresh);
-    });
-    ch.subscribe();
-  }
-  setInterval(start,1000);
-  window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
+'use strict';
+const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests','avatars'];
+let ch=null,timer=0,started=false;
+function refresh(){clearTimeout(timer);timer=setTimeout(function(){
+ try{if(typeof rqLoad==='function'&&document.getElementById('rqApp')&&!document.getElementById('rqApp').hidden)rqLoad()}catch(e){}
+ try{if(typeof load==='function'&&document.getElementById('app')&&!document.getElementById('app').hidden)load()}catch(e){}
+ try{if(typeof window.e8LoadSupplierReportAdmin==='function'&&document.getElementById('sup')&&!document.getElementById('sup').hidden)window.e8LoadSupplierReportAdmin()}catch(e){}
+ try{if(typeof window.e8LoadPayAdmin==='function'&&document.getElementById('payments')&&!document.getElementById('payments').hidden)window.e8LoadPayAdmin()}catch(e){}
+ try{if(typeof window.e8LoadSupplierReport==='function'&&document.getElementById('vRep')&&!document.getElementById('vRep').hidden)window.e8LoadSupplierReport()}catch(e){}
+ try{if(typeof window.e8LoadPaySupplier==='function'&&document.getElementById('vWithdraw')&&!document.getElementById('vWithdraw').hidden)window.e8LoadPaySupplier()}catch(e){}
+ try{if(typeof loadSupplierWorkflow==='function')loadSupplierWorkflow()}catch(e){}
+},350)}
+function start(){if(started||typeof sb==='undefined'||!sb)return;started=true;ch=sb.channel('elev8-live-sync');TABLES.forEach(function(table){ch.on('postgres_changes',{event:'*',schema:'public',table:table},refresh)});ch.subscribe()}
+setInterval(start,1000);
+window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
 })();
 </script></body></html>
