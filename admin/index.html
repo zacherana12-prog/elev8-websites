@@ -1567,32 +1567,48 @@ tbody tr:hover{background:rgba(255,211,78,.035)!important}
 (function(){
 function E(id){return document.getElementById(id)}
 function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function X(v){var d=document.createElement('div');d.textContent=v==null?'':v;return d.innerHTML}
+function X(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
 async function loadPayAdmin(){
- if(typeof sb==='undefined'||!sb)return;
- var z=await Promise.all([sb.from('profiles').select('id,name').eq('role','supplier').order('name'),sb.from('withdrawal_availability').select('*'),sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),sb.from('supplier_earnings_ledger').select('supplier_id,total,paid_amount,status')]);
+ if(typeof sb==='undefined'||!sb||!E('e8PayAvail'))return;
+ var z=await Promise.all([
+  sb.from('profiles').select('id,name').eq('role','supplier').order('name'),
+  sb.from('withdrawal_availability').select('*'),
+  sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),
+  sb.from('supplier_earnings_ledger').select('supplier_id,total,paid_amount,status')
+ ]);
  if(z.some(function(x){return x.error}))return;
- var prof=z[0].data,av=z[1].data,wr=z[2].data,ledger=z[3].data,bal={};
- ledger.forEach(function(x){if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0));}
+ var prof=z[0].data||[],av=z[1].data||[],wr=z[2].data||[],ledger=z[3].data||[],bal={};
+ ledger.forEach(function(x){
+  if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0));
+ });
  wr.forEach(function(x){bal[x.supplier_id]=(bal[x.supplier_id]||0)-Number(x.amount||0)});
- var am=new Map(av.map(function(x){return [x.supplier_id,x]}));
+ var amap=new Map(av.map(function(x){return [x.supplier_id,x]}));
  E('e8PayAvail').innerHTML=prof.map(function(p){
-  var v=am.get(p.id)||{status:'not_ready',ready_at:'',note:''},dt=v.ready_at?new Date(v.ready_at).toISOString().slice(0,16):'';
-  return '<tr><td><b>'+X(p.name)+'</b></td><td>'+P(Math.max(0,bal[p.id]||0))+'</td><td><select data-wa="'+p.id+'"><option value="not_ready" '+(v.status==='not_ready'?'selected':'')+'>Not ready</option><option value="ready" '+(v.status==='ready'?'selected':'')+'>Ready to withdraw</option><option value="scheduled" '+(v.status==='scheduled'?'selected':'')+'>Scheduled</option></select></td><td><input type="datetime-local" data-wd="'+p.id+'" value="'+dt+'"></td><td><input data-wn="'+p.id+'" maxlength="120" value="'+X(v.note||'')+'" placeholder="Optional note"></td><td><button class="sm" data-ws="'+p.id+'">Save</button></td></tr>'
+  var v=amap.get(p.id)||{status:'not_ready',ready_at:null,note:''};
+  var dt=v.ready_at?new Date(v.ready_at).toISOString().slice(0,16):'';
+  return '<tr><td><b>'+X(p.name)+'</b></td><td>'+P(Math.max(0,bal[p.id]||0))+'</td><td><select data-wa="'+p.id+'"><option value="not_ready" '+(v.status==='not_ready'?'selected':'')+'>Not ready</option><option value="ready" '+(v.status==='ready'?'selected':'')+'>Ready to withdraw</option><option value="scheduled" '+(v.status==='scheduled'?'selected':'')+'>Scheduled</option></select></td><td><input type="datetime-local" data-wd="'+p.id+'" value="'+dt+'"></td><td><input data-wn="'+p.id+'" maxlength="120" value="'+X(v.note||'')+'" placeholder="Optional note"></td><td><button class="sm" data-ws="'+p.id+'">Save</button></td></tr>';
  }).join('')||'<tr><td colspan="6" class="empty">No suppliers found.</td></tr>';
  E('e8PayReq').innerHTML=wr.map(function(x){
   var n=(prof.find(function(p){return p.id===x.supplier_id})||{}).name||'Supplier';
-  return '<tr><td>'+X(n)+'</td><td>'+P(x.amount)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><select data-wr="'+x.id+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="completed" '+(x.status==='completed'?'selected':'')+'>Completed</option></select></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td><td><button class="sm" data-wc="'+x.id+'">Save</button></td></tr>'
+  return '<tr><td>'+X(n)+'</td><td>'+P(x.amount)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><select data-wr="'+x.id+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="completed" '+(x.status==='completed'?'selected':'')+'>Completed</option></select></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td><td><button class="sm" data-wc="'+x.id+'">Save</button></td></tr>';
  }).join('')||'<tr><td colspan="6" class="empty">No withdrawal requests yet.</td></tr>';
 }
 document.addEventListener('click',async function(e){
  var d=e.target.dataset||{};
- if(d.ws){var st=E('e8PayAvail').querySelector('[data-wa="'+d.ws+'"]').value,raw=E('e8PayAvail').querySelector('[data-wd="'+d.ws+'"]').value,note=E('e8PayAvail').querySelector('[data-wn="'+d.ws+'"]').value.trim(),ready=raw?new Date(raw).toISOString():null;
+ if(d.ws){
+  var row=E('e8PayAvail').querySelector('[data-wa="'+d.ws+'"]');
+  var st=row.value,raw=E('e8PayAvail').querySelector('[data-wd="'+d.ws+'"]').value,note=E('e8PayAvail').querySelector('[data-wn="'+d.ws+'"]').value.trim();
+  var ready=raw?new Date(raw).toISOString():null;
   if(st==='scheduled'&&!ready){E('e8PayMsg').textContent='Choose a ready date for scheduled funds.';return}
   var r=await sb.from('withdrawal_availability').upsert({supplier_id:d.ws,status:st,ready_at:ready,note:note,updated_at:new Date().toISOString()},{onConflict:'supplier_id'});
-  E('e8PayMsg').textContent=r.error?r.error.message:'Withdrawal availability saved.';loadPayAdmin()
+  E('e8PayMsg').textContent=r.error?r.error.message:'Withdrawal availability saved.';loadPayAdmin();
  }
- if(d.wc){var st2=E('e8PayReq').querySelector('[data-wr="'+d.wc+'"]').value,done=st2==='completed'?new Date().toISOString():null,r2=await sb.from('withdrawal_requests').update({status:st2,completed_at:done}).eq('id',d.wc);E('e8PayMsg').textContent=r2.error?r2.error.message:'Withdrawal status updated.';loadPayAdmin()}
+ if(d.wc){
+  var st2=E('e8PayReq').querySelector('[data-wr="'+d.wc+'"]').value;
+  var done=st2==='completed'?new Date().toISOString():null;
+  var r2=await sb.from('withdrawal_requests').update({status:st2,completed_at:done}).eq('id',d.wc);
+  E('e8PayMsg').textContent=r2.error?r2.error.message:'Withdrawal status updated.';loadPayAdmin();
+ }
 });
 document.querySelector('[data-v="payments"]')?.addEventListener('click',function(){setTimeout(loadPayAdmin,0)});
 window.addEventListener('load',function(){setTimeout(loadPayAdmin,1500);setInterval(function(){if(E('payments')&&!E('payments').hidden)loadPayAdmin()},8000)});
