@@ -1801,7 +1801,6 @@ function apply(rows){
  var f=E8('fEnt');if(f&&f.elements.sup){
   var old=f.elements.sup.value;f.elements.sup.innerHTML=options(rows,'Choose registered supplier');if(rows.some(function(p){return p.id===old}))f.elements.sup.value=old;
  }
- setSelect('e8StockSupplier',rows,'All suppliers');
  setSelect('e8SoloSup',rows,'Choose registered supplier');
  setSelect('dmS',rows,'Choose registered supplier');
  setSelect('e8LedgerSup',rows,'Choose registered supplier');
