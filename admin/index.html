@@ -489,7 +489,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 </div>
 <details class="e8-compact-panel">
   <summary>Supplier management &amp; data entry</summary>
-  <div class="e8-management-grid">
+  <div id="e8RosterMsg" style="margin:-4px 0 10px;color:var(--cy);font-size:12px">Loading registered suppliers…</div><div class="e8-management-grid">
     <div class="card">
       <h3>Paste stock</h3>
       <textarea id="pTxt" rows="7" placeholder="Maurin:
@@ -655,25 +655,15 @@ function renderSupSum(){
  const row=(n,u,c,o)=>`<td>${n}</td><td>${u}</td><td>${php(c)}</td><td>${php(u?c/u:0)}</td><td class="${o?'neg':'pos'}">${php(o)}</td>`;
  $('tSum').innerHTML=T.length?T.map(x=>`<tr>${row(esc(x.name),x.u,x.c,x.o)}</tr>`).join('')+`<tr style="font-weight:600">${row('All suppliers',u,c,od)}</tr>`:'<tr><td colspan="5" class="empty">Paste your first supplier stock above.</td></tr>';
 }
-function renderSup(){
+async function renderSup(){
  renderSupSum();
  const inp=(f,e,v,t,w)=>`<input type="${t}" data-e="${e.id}" data-f="${f}" value="${esc(v)}" ${t==='number'?'step="any" min="0"':''} ${f==='sup'?'list="supl"':''} style="width:${w};padding:6px">`;
  $('tEnt').innerHTML=S.ents.length?S.ents.slice().reverse().map(e=>`<tr data-r="${e.id}"><td>${inp('sup',e,e.sup,'text','110px')}</td><td>${inp('qty',e,e.qty,'number','64px')}</td><td>${inp('item',e,e.item,'text','150px')}</td><td>${inp('tier',e,e.tier||'','text','80px')}</td><td>${inp('total',e,r2(e.qty*e.cost),'number','100px')}</td><td>${inp('unit',e,r2(e.cost),'number','90px')}</td>
  <td><select data-pay="${e.id}">${['PENDING','PARTIALLY PAID','PAID'].map(s=>`<option${s===e.pay?' selected':''}>${s}</option>`).join('')}</select></td>
- <td>${e.pay==='PARTIALLY PAID'?`<input type="number" step="0.01" value="${e.paid||0}" data-paid="${e.id}" style="width:100px;padding:6px">`:php(paidOf(e))}</td><td class="o ${owed(e)?'neg':'pos'}">${php(owed(e))}</td><td>${inp('date',e,e.date||'','date','130px')}</td><td><button class="sm" data-de="${e.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">No supplier items yet.</td></tr>';
+ <td>${e.pay==='PARTIALLY PAID'? `<input type="number" step="0.01" value="${e.paid||0}" data-paid="${e.id}" style="width:100px;padding:6px">`:php(paidOf(e))}</td><td class="o ${owed(e)?'neg':'pos'}">${php(owed(e))}</td><td>${inp('date',e,e.date||'','date','130px')}</td><td><button class="sm" data-de="${e.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">No supplier items yet.</td></tr>';
  $('tProf').innerHTML=S.profs.length?S.profs.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.method)}</td><td>${esc(p.details)}</td><td>${esc(p.notes)}</td><td>${php(S.ents.filter(e=>e.sup.toLowerCase()===p.name.toLowerCase()).reduce((t,e)=>t+owed(e),0))}</td><td><button class="sm" data-dp="${p.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">No local supplier profiles. Registered suppliers are synchronized automatically.</td></tr>';
  profRender();
- const registered=RP.profs.filter(p=>p.role==='supplier' || !p.role).map(p=>({id:p.id,name:String(p.name||'').trim()})).filter(p=>p.name);
- const local=[...S.profs.map(p=>({id:'local:'+p.id,name:String(p.name||'').trim()})),...S.ents.map(e=>({id:'local:'+e.sup,name:String(e.sup||'').trim()})).filter(p=>p.name)];
- const merged=new Map();
- [...registered,...local].forEach(p=>{const k=p.name.toLowerCase();if(!merged.has(k)||String(p.id).indexOf('local:')!==0)merged.set(k,p)});
- const suppliers=[...merged.values()].sort((a,b)=>a.name.localeCompare(b.name));
- const oldDef=$('pDef')?.value||'',oldSup=$('fEnt')?.elements?.sup?.value||'';
- const opts='<option value="">Choose supplier</option>'+suppliers.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join('');
- if($('pDef')){$('pDef').innerHTML=opts;$('pDef').value=oldDef;}
- const supSel=$('fEnt')?.elements?.sup;
- if(supSel){supSel.innerHTML=opts;supSel.value=oldSup;}
-
+ await window.e8RefreshRegisteredSuppliers();
 }
 const TIER=/(^|\s)(\d+(?:\.\d+)?)(ms|b|m|k)(\+?)(?=\s|$)/i;
 function parseStock(txt,def){
@@ -1723,6 +1713,64 @@ document.addEventListener('click',async function(e){
 document.querySelector('[data-v="payments"]')?.addEventListener('click',function(){setTimeout(loadPayAdmin,0)});
 window.addEventListener('load',function(){setTimeout(loadPayAdmin,1200);setInterval(function(){if(E('payments')&&!E('payments').hidden)loadPayAdmin()},8000)});
 })();
+</script><script id="e8-registered-supplier-roster">
+(function(){
+'use strict';
+var rosterCache=[],rosterSig='',rosterBusy=false;
+function E8(id){return document.getElementById(id)}
+function X8(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
+function validR(){return typeof sb!=='undefined'&&sb&&typeof R!=='undefined'&&R&&R.me}
+window.e8RefreshRegisteredSuppliers=async function(force){
+ if(!validR()||rosterBusy)return rosterCache;
+ rosterBusy=true;
+ try{
+  if(force!==false){try{await sb.rpc('sync_registered_suppliers')}catch(e){}}
+  var q=await sb.from('profiles').select('id,name,role').eq('role','supplier').order('name',{ascending:true});
+  if(q.error)throw q.error;
+  var rows=(q.data||[]).filter(function(p){return p.id&&String(p.name||'').trim()}).map(function(p){return{id:p.id,name:String(p.name).trim(),role:p.role}});
+  rosterCache=rows;
+  var sig=JSON.stringify(rows);
+  if(sig!==rosterSig){rosterSig=sig;apply(rows)}
+  return rows;
+ }catch(e){
+  if(E8('e8RosterMsg'))E8('e8RosterMsg').textContent='Supplier roster sync error: '+(e.message||e);
+  return rosterCache;
+ }finally{rosterBusy=false}
+};
+function options(rows,placeholder,includeCounts){
+ return '<option value="">'+placeholder+'</option>'+rows.map(function(p){return '<option value="'+X8(p.id)+'">'+X8(p.name)+'</option>'}).join('');
+}
+function setSelect(id,rows,placeholder){
+ var s=E8(id);if(!s)return;
+ var old=s.value,valid=rows.some(function(p){return p.id===old});
+ s.innerHTML=options(rows,placeholder,false);
+ if(valid)s.value=old;else if(rows.length&&!old)s.value=rows[0].id;
+}
+function setNameSelect(id,rows,placeholder){
+ var s=E8(id);if(!s)return;
+ var old=s.value;
+ s.innerHTML='<option value="">'+placeholder+'</option>'+rows.map(function(p){return '<option value="'+X8(p.name)+'">'+X8(p.name)+'</option>'}).join('');
+ if(rows.some(function(p){return p.name===old}))s.value=old;
+}
+function apply(rows){
+ // All supplier selectors use Auth/Profile IDs or canonical registered names.
+ setNameSelect('pDef',rows,'Choose registered supplier');
+ var f=E8('fEnt');if(f&&f.elements.sup){
+  var old=f.elements.sup.value;f.elements.sup.innerHTML=options(rows,'Choose registered supplier');if(rows.some(function(p){return p.id===old}))f.elements.sup.value=old;
+ }
+ setSelect('e8StockSupplier',rows,'All suppliers');
+ setSelect('e8SoloSup',rows,'Choose registered supplier');
+ setSelect('dmS',rows,'Choose registered supplier');
+ setSelect('e8LedgerSup',rows,'Choose registered supplier');
+ var datalist=E8('supl');if(datalist)datalist.innerHTML=rows.map(function(p){return '<option value="'+X8(p.name)+'">'+X8(p.name)+'</option>'}).join('');
+ // Data/clear supplier list
+ var dSup=E8('dSup');if(dSup){var oldD=dSup.value;dSup.innerHTML=rows.length?rows.map(function(p){return '<option value="'+X8(p.id)+'">'+X8(p.name)+'</option>'}).join(''):'<option value="">No suppliers</option>';if(rows.some(function(p){return p.id===oldD}))dSup.value=oldD}
+ var rosterMsg=E8('e8RosterMsg');if(rosterMsg)rosterMsg.textContent=rows.length+' registered supplier'+(rows.length===1?'':'s')+' available in every supplier selector.';
+}
+window.e8RegisteredSuppliers=()=>rosterCache.slice();
+setInterval(function(){if(validR())window.e8RefreshRegisteredSuppliers(false)},6000);
+window.addEventListener('load',function(){setTimeout(function(){if(validR())window.e8RefreshRegisteredSuppliers(true)},1200)});
+})();
 </script><script id="e8-admin-workflow-v1">
 (function(){
 'use strict';
@@ -1851,7 +1899,7 @@ async function loadSupplierReportAdmin(){
   sb.rpc('supplier_wallet')
  ]);
  if(q.some(function(x){return x.error}))return;
- cache.rows=q[0].data||[];cache.profiles=q[1].data||[];cache.wallet=new Map((q[2].data||[]).map(function(x){return [x.supplier_id,x]}));
+ cache.rows=q[0].data||[];cache.profiles=(window.e8RegisteredSuppliers?window.e8RegisteredSuppliers():q[1].data||[]);cache.wallet=new Map((q[2].data||[]).map(function(x){return [x.supplier_id,x]}));
  var sel=E('e8SupReportFilter'),old=sel.value;
  sel.innerHTML='<option value="">All suppliers</option>'+cache.profiles.map(function(p){return '<option value="'+p.id+'">'+X(p.name)+'</option>'}).join('');
  if(old && cache.profiles.some(function(p){return p.id===old}))sel.value=old;
@@ -1900,7 +1948,7 @@ function labelS(v){return ({submitted:'SUBMITTED',approved:'APPROVED',collected:
 function tagS(v){var cls=v==='sold'?'t-paid':v==='listed'||v==='collected'||v==='approved'?'t-received':v==='cancelled'?'t-x':v==='partially_sold'?'t-pending':'t-pending';return '<span class="tag '+cls+'">'+labelS(v)+'</span>'}
 function statS(l,v,c){return '<div class="stat" style="--c:'+c+'"><small>'+l+'</small><b>'+v+'</b></div>'}
 function populateSuppliers(){
- var s=E('e8StockSupplier'),old=s?s.value:'',names=stockProfiles.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+ var s=E('e8StockSupplier'),old=s?s.value:'',names=(window.e8RegisteredSuppliers?window.e8RegisteredSuppliers():stockProfiles).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
  if(s){s.innerHTML='<option value="">All suppliers</option>'+names.map(p=>'<option value="'+p.id+'">'+escS(p.name)+'</option>').join('');if(names.some(p=>p.id===old))s.value=old}
 }
 async function loadSupplierStock(){
