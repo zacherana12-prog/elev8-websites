@@ -1871,7 +1871,9 @@ document.addEventListener('click',async function(ev){
  if(d.e8LedgerSave){
   var row=ev.target.closest('tr'),statusEl=row&&row.querySelector('[data-e8-ledger-status="'+d.e8LedgerSave+'"]');
   if(!row||!statusEl||!adminReady()){if(E('e8SupReportMeta'))E('e8SupReportMeta').textContent='Sign in as Admin to edit ledger status.';return}
-  var st=statusEl.value,prev=statusEl.dataset.e8LedgerPrev||'',rec=cache.rows.find(function(r){return r.id===d.e8LedgerSave}),total=Number(rec?.total||0),paid=Number(rec?.paid_amount||0);
+  var st=statusEl.value,prev=statusEl.dataset.e8LedgerPrev||'',rq=await sb.from('supplier_earnings_ledger').select('total,paid_amount').eq('id',d.e8LedgerSave).maybeSingle();
+  if(rq.error||!rq.data){E('e8SupReportMeta').textContent='Ledger row could not be loaded: '+(rq.error?.message||'not found');return}
+  var total=Number(rq.data.total||0),paid=Number(rq.data.paid_amount||0);
   if(st==='paid')paid=total;else if(prev==='paid'&&st!=='paid')paid=0;paid=Math.min(Math.max(0,paid),Math.max(0,total));
   statusEl.disabled=true;ev.target.disabled=true;
   var u=await sb.from('supplier_earnings_ledger').update({status:st,paid_amount:paid,updated_at:new Date().toISOString()}).eq('id',d.e8LedgerSave);
