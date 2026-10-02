@@ -849,12 +849,25 @@ async function rqLoad(){
  if(!me||me.role!=='admin'){rqLost('This browser is signed in as a supplier, not admin. Sign in with your admin email.');return}
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  $('rqWho').textContent='Signed in as '+session.user.email;R.me=session.user.id;rm('');
- await sb.rpc('sync_registered_suppliers');
- await sb.rpc('sync_supplier_stock');
- await sb.rpc('close_expired_lists');
- const q=await Promise.all([sb.from('requests').select('*').order('created_at'),sb.from('responses').select('*'),sb.from('profiles').select('*').eq('role','supplier').order('name'),sb.from('messages').select('*').order('created_at'),sb.from('dms').select('*').order('created_at'),sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(50),sb.from('supplier_payment').select('*'),sb.from('payment_edit_requests').select('*').order('created_at',{ascending:false}),sb.from('updates').select('*').order('created_at',{ascending:false}),sb.from('buying_lists').select('*').order('created_at',{ascending:false})]);
+ await sb.rpc('sync_registered_suppliers');await sb.rpc('sync_supplier_stock');await sb.rpc('close_expired_lists');
+ const q=await Promise.all([
+  sb.from('requests').select('*').order('created_at'),
+  sb.from('responses').select('*'),
+  sb.from('profiles').select('*').eq('role','supplier').order('name'),
+  sb.from('messages').select('*').order('created_at'),
+  sb.from('dms').select('*').order('created_at'),
+  sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(50),
+  sb.from('supplier_payment').select('*'),
+  sb.from('payment_edit_requests').select('*').order('created_at',{ascending:false}),
+  sb.from('updates').select('*').order('created_at',{ascending:false}),
+  sb.from('buying_lists').select('*').order('created_at',{ascending:false}),
+  sb.from('supplier_stock_items').select('*').order('updated_at',{ascending:false})
+ ]);
  const bad=q.find(x=>x.error);if(bad){rm('Could not load: '+bad.error.message);return}
- [R.reqs,R.resp,R.profs,R.msgs,R.dms,R.anns,R.pay,R.per,R.upds,R.lists]=q.map(x=>x.data);RP.pay=R.pay;RP.profs=R.profs;rqSync();rqRender();profRender();permRender();updRender()}
+ [R.reqs,R.resp,R.profs,R.msgs,R.dms,R.anns,R.pay,R.per,R.upds,R.lists]=q.slice(0,10).map(x=>x.data);
+ R.stock=q[10].data||[];
+ RP.pay=R.pay;RP.profs=R.profs;rqSync();rqRender();profRender();permRender();updRender()
+}
 /* Collected/Paid responses -> existing Supplier Report rows (S.ents), one row per response id, so edits/undo never duplicate */
 function rqSync(){
  const live=R.resp.filter(r=>r.status!=='pending'),keep=new Set(live.map(r=>'rq_'+r.id));let ch=0;
@@ -1849,10 +1862,17 @@ function adminNotice(t){if(E('e8PayMsg'))E('e8PayMsg').textContent=t;if(E('rqMsg
 
 async function loadCustom(){
  if(!adminReady()||!E('e8CustomList'))return;
- var q=await sb.from('custom_submissions').select('*,custom_submission_items(*)').order('created_at',{ascending:false});if(q.error){E('e8CustomList').textContent=q.error.message;return}
- var p=R.profs||[];E('e8CustomList').innerHTML=(q.data||[]).map(function(x){
+ var q=await Promise.all([
+  sb.from('custom_submissions').select('*,custom_submission_items(*)').order('created_at',{ascending:false}),
+  sb.from('supplier_stock_items').select('*').eq('source_type','custom_submission').order('updated_at',{ascending:false})
+ ]);
+ if(q.some(function(x){return x.error})){E('e8CustomList').textContent=(q.find(function(x){return x.error})||{}).error?.message||'Could not load custom submissions.';return}
+ var p=window.e8RegisteredSuppliers?window.e8RegisteredSuppliers():(R.profs||[]);
+ var sm=new Map((q[1].data||[]).map(function(s){return[s.source_id,s]}));
+ var stockLabel=function(v){return ({submitted:'SUBMITTED',approved:'APPROVED',collected:'ON HAND',listed:'LISTED',partially_sold:'PARTIALLY SOLD',sold:'SOLD',cancelled:'CANCELLED'}[v]||String(v||'—').toUpperCase())};
+ E('e8CustomList').innerHTML=(q[0].data||[]).map(function(x){
    var n=(p.find(function(z){return z.id===x.supplier_id})||{}).name||'Supplier',total=(x.custom_submission_items||[]).reduce(function(t,i){return t+Number(i.quantity||0)*Number(i.rate||0)},0);
-   return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>'+escX(n)+'</b><span class="tag '+(x.review_status==='approved'?'t-received':x.review_status==='denied'?'t-x':'t-pending')+'">'+escX(x.review_status.toUpperCase())+'</span></div><div style="color:var(--mu);font-size:12px;margin:5px 0">'+new Date(x.created_at).toLocaleString()+' · Supplier status: '+escX(x.supplier_status)+' · Revision '+x.revision+' · '+money(total)+'</div><div>'+((x.custom_submission_items||[]).map(function(i){return '<div style="padding:4px 0;border-bottom:1px solid var(--line)">'+escX(i.item_name)+' × '+i.quantity+' @ '+money(i.rate)+'</div>'}).join(''))+'</div>'+(x.correction_message?'<div style="margin-top:7px;color:var(--am)">Correction requested: '+escX(x.correction_message)+'</div>':'')+'<div style="display:flex;gap:6px;margin-top:8px">'+(x.review_status==='submitted'?'<button class="sm" data-correction="'+x.id+'">Request Correction</button> <button class="btn" data-approvecustom="'+x.id+'">Approve &amp; Collect</button> <button class="sm" data-denycustom="'+x.id+'">Deny</button>':'')+'</div></div>'
+   return '<div class="card" style="margin:8px 0"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>'+escX(n)+'</b><span class="tag '+(x.review_status==='approved'?'t-received':x.review_status==='denied'?'t-x':'t-pending')+'">'+escX(x.review_status.toUpperCase())+'</span></div><div style="color:var(--mu);font-size:12px;margin:5px 0">'+new Date(x.created_at).toLocaleString()+' · Supplier status: '+escX(x.supplier_status)+' · Revision '+x.revision+' · '+money(total)+'</div><div>'+((x.custom_submission_items||[]).map(function(i){var s=sm.get(i.id),st=s?stockLabel(s.status):'SUBMITTED';return '<div style="padding:5px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center"><span>'+escX(i.item_name)+' × '+i.quantity+' @ '+money(i.rate)+'</span><span class="tag '+(s&&s.status==='cancelled'?'t-x':s&&['approved','collected','listed','partially_sold','sold'].includes(s.status)?'t-received':'t-pending')+'">'+st+'</span></div>'}).join(''))+'</div>'+(x.correction_message?'<div style="margin-top:7px;color:var(--am)">Correction requested: '+escX(x.correction_message)+'</div>':'')+'<div style="display:flex;gap:6px;margin-top:8px">'+(x.review_status==='submitted'?'<button class="sm" data-correction="'+x.id+'">Request Correction</button> <button class="btn" data-approvecustom="'+x.id+'">Approve &amp; Collect</button> <button class="sm" data-denycustom="'+x.id+'">Deny</button>':'')+'</div></div>'
  }).join('')||'<div class="empty">No custom submissions yet.</div>';
 }
 
