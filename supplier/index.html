@@ -217,7 +217,7 @@ async function enter(){
  $('auth').hidden=true;$('app').hidden=false;$('who').textContent=p.name;MYN=p.name;$('pNm').textContent=p.name;
  const beat=()=>sb.rpc('touch');(window.T||[]).forEach(clearInterval);beat();load();window.T=[setInterval(beat,6e4),setInterval(load,8000)]}
 $('out').onclick=async()=>{await sb.auth.signOut({scope:'local'});location.reload()};
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['vReq','vRep','vChat','vDm','vWithdraw','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);if(b.dataset.t==='vChat')$('chL').scrollTop=1e9;if(b.dataset.t==='vDm')$('dmL').scrollTop=1e9});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['vReq','vRep','vChat','vDm','vWithdraw','vPay','vUpd'].forEach(i=>$(i).hidden=i!==b.dataset.t);if(b.dataset.t==='vReq')load();if(b.dataset.t==='vChat')$('chL').scrollTop=1e9;if(b.dataset.t==='vDm')$('dmL').scrollTop=1e9});
 async function load(){
  if(Date.now()-AVT>6e4){AVT=Date.now();await avLoad()}
  try{await sb.rpc('close_expired_lists')}catch(e){}
