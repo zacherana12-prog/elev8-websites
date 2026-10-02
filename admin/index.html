@@ -426,6 +426,17 @@ button,a,input,select,textarea{touch-action:manipulation}
 .stat[style*="--c:var(--am)"]{background:linear-gradient(135deg,rgba(255,216,107,.11),rgba(255,216,107,.025))!important}
 .stat[style*="--c:var(--rd)"]{background:linear-gradient(135deg,rgba(255,139,158,.11),rgba(255,139,158,.025))!important}
 .stat[style*="--c:var(--bl)"],.stat[style*="--c:var(--pu)"],.stat[style*="--c:var(--pk)"]{background:linear-gradient(135deg,rgba(184,184,189,.09),rgba(184,184,189,.02))!important}
+</style><style id="e8-report-v2">
+.e8-report-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))}
+.e8-report-toolbar>div{display:grid;gap:4px}.e8-report-toolbar strong{font-size:14px}.e8-report-toolbar span{font-size:12px;color:var(--mu)}
+.e8-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.e8-section-head span{font-size:11px;color:var(--mu)}
+.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
+.e8-compact-panel summary{cursor:pointer;padding:13px 2px;font-weight:700;color:var(--e-yellow,#ffd84d);list-style:none}.e8-compact-panel summary::-webkit-details-marker{display:none}.e8-compact-panel summary::after{content:'+';float:right;color:var(--mu)}.e8-compact-panel[open] summary::after{content:'−'}
+.e8-management-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 0 14px}.e8-management-grid .card{height:100%}
+.e8-wallet-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.e8-wallet-stats .stat{min-height:96px!important}
+.e8-wallet-action{max-width:760px}.e8-wallet-action #e8WForm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+@media(max-width:900px){.e8-management-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.e8-management-grid,.e8-wallet-stats{grid-template-columns:1fr}.e8-wallet-action #e8WForm{grid-template-columns:1fr}}
 </style></head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
 <nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
@@ -442,23 +453,86 @@ button,a,input,select,textarea{touch-action:manipulation}
 <div class="card wrap"><h3>Quantity breakdown</h3><table style="min-width:520px"><thead><tr><th>Item</th><th>Total</th><th>Listed</th><th>Sold</th><th>Delivered</th><th>Available</th><th id="qCh" hidden>Cancelled</th></tr></thead><tbody id="tQty"></tbody></table><div style="color:var(--mu);font-size:12px;padding-top:8px">Sold = Sold + Pending Delivery &middot; Delivered = Delivered + Completed &middot; Available = Available + Unlisted</div></div>
 <div class="card wrap"><table><thead><tr><th>Item</th><th>M/s</th><th>Cost</th><th>Selling</th><th>Net</th><th>Profit</th><th>Profit %</th><th>Account</th><th>Status</th><th>Funds</th><th></th></tr></thead><tbody id="tInv"></tbody></table></div></section>
 
-<section id="payments" class="view"><h2>Payments</h2><div id="e8PayMsg" style="color:var(--cy);font-size:12px;min-height:18px;margin-bottom:8px"></div><div class="card wrap"><h3>Withdrawal availability</h3><p style="color:var(--mu);font-size:12px">Set whether each supplier can withdraw now, keep funds unavailable, or schedule a date and time when withdrawals open.</p><div style="overflow:auto"><table style="min-width:980px"><thead><tr><th>Supplier</th><th>Withdrawable balance</th><th>Availability</th><th>Ready date</th><th>Admin note</th><th></th></tr></thead><tbody id="e8PayAvail"></tbody></table></div></div><div class="card wrap" style="margin-top:12px"><h3>Withdrawal requests</h3><div style="overflow:auto"><table style="min-width:850px"><thead><tr><th>Supplier</th><th>Amount</th><th>Submitted</th><th>Status</th><th>Completed</th><th></th></tr></thead><tbody id="e8PayReq"></tbody></table></div></div></section><section id="sup" class="view"><h2>Supplier Report</h2><div class="grid" id="supStats"></div>
-<div class="card"><h3>Paste stock</h3>
-<textarea id="pTxt" rows="7" placeholder="Maurin:&#10;3x 1B Gym Bros 840&#10;2x Celularcini 420&#10;Charles:&#10;5x 1B Ketupat 300"></textarea>
-<div style="display:flex;gap:10px;align-items:end;margin-top:10px;flex-wrap:wrap"><label style="flex:1;min-width:200px">Supplier profile<input id="pDef" list="supl" required placeholder="Choose supplier profile"></label><button class="btn" id="pBtn" type="button">Add pasted stock</button></div>
-<div id="pMsg" style="margin-top:10px;font-size:12px;color:var(--mu)">The number at the end of each line is the total cost for that line. Unit cost is worked out for you.</div></div>
-<div class="card wrap"><h3>By supplier</h3><table style="min-width:520px"><thead><tr><th>Supplier</th><th>Units</th><th>Total Capital</th><th>Avg Cost / Unit</th><th>Still Owed</th></tr></thead><tbody id="tSum"></tbody></table></div>
-<div class="row"><div class="card"><h3>Supplier profile</h3><form id="fProf">
-<label>Supplier Name<input name="name" required></label><label>Payment Method<input name="method"></label>
-<label>Payment Details<input name="details"></label><label>Notes<input name="notes"></label><button class="btn">Save supplier</button></form></div>
-<div class="card"><h3>Add supplier item</h3><form id="fEnt">
-<label>Supplier<input name="sup" list="supl" required></label><datalist id="supl"></datalist><label>Item<input name="item" required></label>
-<label>Quantity<input name="qty" type="number" min="1" value="1"></label><label>Cost (each) PHP<input name="cost" type="number" step="0.01" min="0" required></label>
-<label>Date Received<input name="date" type="date"></label><label>Payment Status<select name="pay"><option>PENDING</option><option>PARTIALLY PAID</option><option>PAID</option></select></label>
-<label>Amount Paid (if partial)<input name="paid" type="number" step="0.01" min="0"></label><button class="btn">Add item</button></form></div></div>
-<div class="card wrap" id="e8LiveLedgerAdmin"><h3>Live supplier ledger</h3><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px"><label style="min-width:180px;flex:1">Supplier<select id="e8LedgerSup"></select></label><label style="min-width:180px;flex:1">Item<input id="e8LedgerItem"></label><label style="width:100px">Qty<input id="e8LedgerQty" type="number" min="1" value="1"></label><label style="width:130px">Rate PHP<input id="e8LedgerRate" type="number" step="0.01" min="0" value="0"></label><label style="min-width:140px">Status<select id="e8LedgerStatus"><option value="collected">Collected / Owed</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="cancelled">Cancelled</option></select></label><button class="btn" id="e8LedgerAdd" type="button">Add Record</button></div><div id="e8LedgerMsg" style="color:var(--cy);font-size:12px;min-height:16px"></div><div style="overflow:auto"><table style="min-width:1100px"><thead><tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Paid</th><th>Status</th><th>Source</th><th>Created</th><th></th></tr></thead><tbody id="e8LedgerRows"></tbody></table></div></div>
-<div class="card wrap"><h3>Supplier items <span style="color:var(--mu);font-weight:400;font-size:12px">(click any cell to edit)</span></h3><table style="min-width:1100px"><thead><tr><th>Supplier</th><th>Qty</th><th>Item</th><th>Tier</th><th>Total Cost</th><th>Unit Cost</th><th>Status</th><th>Paid</th><th>Owed</th><th>Date Received</th><th></th></tr></thead><tbody id="tEnt"></tbody></table></div>
-<div class="card wrap"><h3>Supplier profiles</h3><table><thead><tr><th>Supplier</th><th>Payment Method</th><th>Payment Details</th><th>Notes</th><th>Owed</th><th></th></tr></thead><tbody id="tProf"></tbody></table></div></section>
+<section id="payments" class="view">
+<h2>Payments</h2><div id="e8PayMsg" style="color:var(--cy);font-size:12px;min-height:18px;margin-bottom:8px"></div>
+<div class="card wrap">
+  <div class="e8-section-head"><h3>Supplier wallets</h3><span>Balance is automatically reduced by pending and completed withdrawals.</span></div>
+  <div style="overflow:auto"><table style="min-width:760px"><thead><tr>
+    <th>Supplier</th><th>Balance</th><th>Withdrawn</th><th>Availability</th><th>Ready date</th><th>Admin note</th><th></th>
+  </tr></thead><tbody id="e8PayAvail"></tbody></table></div>
+</div>
+<div class="card wrap" style="margin-top:12px">
+  <div class="e8-section-head"><h3>Withdrawal requests</h3><span>Only Admin can mark requests completed.</span></div>
+  <div style="overflow:auto"><table style="min-width:780px"><thead><tr>
+    <th>Supplier</th><th>Amount</th><th>Submitted</th><th>Status</th><th>Completed</th><th></th>
+  </tr></thead><tbody id="e8PayReq"></tbody></table></div>
+</div>
+</section><section id="sup" class="view">
+<h2>Supplier Report</h2>
+<div class="e8-report-toolbar">
+  <div>
+    <strong>Live supplier earnings</strong>
+    <span>One source of truth for buying lists, custom submissions, solo tasks, and manual entries.</span>
+  </div>
+  <label>Supplier
+    <select id="e8SupReportFilter"><option value="">All suppliers</option></select>
+  </label>
+</div>
+<div class="grid" id="e8SupReportStats"></div>
+<div class="card wrap">
+  <div class="e8-section-head"><h3>Supplier earnings ledger</h3><span id="e8SupReportMeta"></span></div>
+  <div style="overflow:auto">
+    <table class="e8-ledger-table"><thead><tr>
+      <th>Date</th><th>Supplier</th><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th><th>Source</th><th>Status</th>
+    </tr></thead><tbody id="e8SupReportRows"></tbody></table>
+  </div>
+</div>
+<details class="e8-compact-panel">
+  <summary>Supplier management &amp; data entry</summary>
+  <div class="e8-management-grid">
+    <div class="card">
+      <h3>Paste stock</h3>
+      <textarea id="pTxt" rows="7" placeholder="Maurin:
+3x 1B Gym Bros 840
+2x Celularcini 420
+Charles:
+5x 1B Ketupat 300"></textarea>
+      <div style="display:flex;gap:10px;align-items:end;margin-top:10px;flex-wrap:wrap">
+        <label style="flex:1;min-width:200px">Supplier profile<input id="pDef" list="supl" required placeholder="Choose supplier profile"></label>
+        <button class="btn" id="pBtn" type="button">Add pasted stock</button>
+      </div>
+      <div id="pMsg" style="margin-top:10px;font-size:12px;color:var(--mu)">The number at the end of each line is the total cost for that line. Unit cost is calculated automatically.</div>
+    </div>
+    <div class="card">
+      <h3>Add supplier item</h3>
+      <form id="fEnt">
+        <label>Supplier<input name="sup" list="supl" required></label>
+        <label>Item<input name="item" required></label>
+        <label>Quantity<input name="qty" type="number" min="1" value="1"></label>
+        <label>Cost (each) PHP<input name="cost" type="number" step="0.01" min="0" required></label>
+        <label>Date Received<input name="date" type="date"></label>
+        <label>Payment Status<select name="pay"><option>PENDING</option><option>PARTIALLY PAID</option><option>PAID</option></select></label>
+        <label>Amount Paid (if partial)<input name="paid" type="number" step="0.01" min="0"></label>
+        <button class="btn">Add item</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Supplier profile</h3>
+      <form id="fProf">
+        <label>Supplier Name<input name="name" required></label>
+        <label>Payment Method<input name="method"></label>
+        <label>Payment Details<input name="details"></label>
+        <label>Notes<input name="notes"></label>
+        <button class="btn">Save supplier</button>
+      </form>
+    </div>
+  </div>
+</details>
+<div id="e8LegacyReportDom" hidden>
+  <div id="supStats"></div>
+  <table><tbody id="tSum"></tbody><tbody id="tEnt"></tbody><tbody id="tProf"></tbody></table>
+</div>
+</section>
 
 <section id="req" class="view"><h2>Buying</h2><div id="rqMsg" style="color:var(--cy);font-size:13px;margin-bottom:10px"></div>
 <div class="card" id="rqLogin"><h3>Admin sign in</h3><form id="fLog"><label>Email<input name="email" type="email" required autocomplete="username"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><button class="btn">Sign in</button></form></div>
@@ -1565,6 +1639,7 @@ tbody tr:hover{background:rgba(255,211,78,.035)!important}
 
 <script id="e8-withdrawal-admin">
 (function(){
+'use strict';
 function E(id){return document.getElementById(id)}
 function P(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function X(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
@@ -1572,46 +1647,39 @@ async function loadPayAdmin(){
  if(typeof sb==='undefined'||!sb||!E('e8PayAvail'))return;
  var z=await Promise.all([
   sb.from('profiles').select('id,name').eq('role','supplier').order('name'),
+  sb.rpc('supplier_wallet'),
   sb.from('withdrawal_availability').select('*'),
-  sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false}),
-  sb.from('supplier_earnings_ledger').select('supplier_id,total,paid_amount,status')
+  sb.from('withdrawal_requests').select('*').order('created_at',{ascending:false})
  ]);
  if(z.some(function(x){return x.error}))return;
- var prof=z[0].data||[],av=z[1].data||[],wr=z[2].data||[],ledger=z[3].data||[],bal={};
- ledger.forEach(function(x){
-  if(x.status==='collected')bal[x.supplier_id]=(bal[x.supplier_id]||0)+Math.max(0,Number(x.total||0)-Number(x.paid_amount||0));
- });
- wr.forEach(function(x){bal[x.supplier_id]=(bal[x.supplier_id]||0)-Number(x.amount||0)});
- var amap=new Map(av.map(function(x){return [x.supplier_id,x]}));
+ var prof=z[0].data||[],wallet=z[1].data||[],av=z[2].data||[],wr=z[3].data||[],wm=new Map(wallet.map(function(x){return [x.supplier_id,x]})),amap=new Map(av.map(function(x){return [x.supplier_id,x]}));
  E('e8PayAvail').innerHTML=prof.map(function(p){
-  var v=amap.get(p.id)||{status:'not_ready',ready_at:null,note:''};
+  var v=amap.get(p.id)||{status:'not_ready',ready_at:null,note:''},w=wm.get(p.id)||{balance:0,withdrawn:0};
   var dt=v.ready_at?new Date(v.ready_at).toISOString().slice(0,16):'';
-  return '<tr><td><b>'+X(p.name)+'</b></td><td>'+P(Math.max(0,bal[p.id]||0))+'</td><td><select data-wa="'+p.id+'"><option value="not_ready" '+(v.status==='not_ready'?'selected':'')+'>Not ready</option><option value="ready" '+(v.status==='ready'?'selected':'')+'>Ready to withdraw</option><option value="scheduled" '+(v.status==='scheduled'?'selected':'')+'>Scheduled</option></select></td><td><input type="datetime-local" data-wd="'+p.id+'" value="'+dt+'"></td><td><input data-wn="'+p.id+'" maxlength="120" value="'+X(v.note||'')+'" placeholder="Optional note"></td><td><button class="sm" data-ws="'+p.id+'">Save</button></td></tr>';
- }).join('')||'<tr><td colspan="6" class="empty">No suppliers found.</td></tr>';
+  return '<tr><td><b>'+X(p.name)+'</b></td><td>'+P(w.balance)+'</td><td>'+P(w.withdrawn)+'</td><td><select data-wa="'+p.id+'"><option value="not_ready" '+(v.status==='not_ready'?'selected':'')+'>Not ready</option><option value="ready" '+(v.status==='ready'?'selected':'')+'>Ready to withdraw</option><option value="scheduled" '+(v.status==='scheduled'?'selected':'')+'>Scheduled</option></select></td><td><input type="datetime-local" data-wd="'+p.id+'" value="'+dt+'"></td><td><input data-wn="'+p.id+'" maxlength="120" value="'+X(v.note||'')+'" placeholder="Optional note"></td><td><button class="sm" data-ws="'+p.id+'">Save</button></td></tr>';
+ }).join('')||'<tr><td colspan="7" class="empty">No suppliers found.</td></tr>';
  E('e8PayReq').innerHTML=wr.map(function(x){
   var n=(prof.find(function(p){return p.id===x.supplier_id})||{}).name||'Supplier';
   return '<tr><td>'+X(n)+'</td><td>'+P(x.amount)+'</td><td>'+new Date(x.created_at).toLocaleString()+'</td><td><select data-wr="'+x.id+'"><option value="pending" '+(x.status==='pending'?'selected':'')+'>Pending</option><option value="completed" '+(x.status==='completed'?'selected':'')+'>Completed</option></select></td><td>'+(x.completed_at?new Date(x.completed_at).toLocaleString():'—')+'</td><td><button class="sm" data-wc="'+x.id+'">Save</button></td></tr>';
  }).join('')||'<tr><td colspan="6" class="empty">No withdrawal requests yet.</td></tr>';
 }
+window.e8LoadPayAdmin=loadPayAdmin;
 document.addEventListener('click',async function(e){
  var d=e.target.dataset||{};
  if(d.ws){
-  var row=E('e8PayAvail').querySelector('[data-wa="'+d.ws+'"]');
-  var st=row.value,raw=E('e8PayAvail').querySelector('[data-wd="'+d.ws+'"]').value,note=E('e8PayAvail').querySelector('[data-wn="'+d.ws+'"]').value.trim();
-  var ready=raw?new Date(raw).toISOString():null;
+  var row=E('e8PayAvail').querySelector('[data-wa="'+d.ws+'"]'),st=row.value,raw=E('e8PayAvail').querySelector('[data-wd="'+d.ws+'"]').value,note=E('e8PayAvail').querySelector('[data-wn="'+d.ws+'"]').value.trim(),ready=raw?new Date(raw).toISOString():null;
   if(st==='scheduled'&&!ready){E('e8PayMsg').textContent='Choose a ready date for scheduled funds.';return}
   var r=await sb.from('withdrawal_availability').upsert({supplier_id:d.ws,status:st,ready_at:ready,note:note,updated_at:new Date().toISOString()},{onConflict:'supplier_id'});
   E('e8PayMsg').textContent=r.error?r.error.message:'Withdrawal availability saved.';loadPayAdmin();
  }
  if(d.wc){
-  var st2=E('e8PayReq').querySelector('[data-wr="'+d.wc+'"]').value;
-  var done=st2==='completed'?new Date().toISOString():null;
+  var st2=E('e8PayReq').querySelector('[data-wr="'+d.wc+'"]').value,done=st2==='completed'?new Date().toISOString():null;
   var r2=await sb.from('withdrawal_requests').update({status:st2,completed_at:done}).eq('id',d.wc);
   E('e8PayMsg').textContent=r2.error?r2.error.message:'Withdrawal status updated.';loadPayAdmin();
  }
 });
 document.querySelector('[data-v="payments"]')?.addEventListener('click',function(){setTimeout(loadPayAdmin,0)});
-window.addEventListener('load',function(){setTimeout(loadPayAdmin,1500);setInterval(function(){if(E('payments')&&!E('payments').hidden)loadPayAdmin()},8000)});
+window.addEventListener('load',function(){setTimeout(loadPayAdmin,1200);setInterval(function(){if(E('payments')&&!E('payments').hidden)loadPayAdmin()},8000)});
 })();
 </script><script id="e8-admin-workflow-v1">
 (function(){
@@ -1727,32 +1795,55 @@ var oldAdminPay=typeof loadPayAdmin==='function'?loadPayAdmin:null;
 window.loadLedger=loadLedger;
 addEventListener('load',function(){setTimeout(function(){loadLedger();loadCustom();loadSolo()},1800);setInterval(function(){loadLedger();loadCustom();loadSolo()},8000)});
 })();
+</script><script id="e8-supplier-report-v2">
+(function(){
+'use strict';
+function E(id){return document.getElementById(id)}
+function M(v){return '₱'+Number(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function X(v){var d=document.createElement('div');d.textContent=v==null?'':String(v);return d.innerHTML}
+var cache={rows:[],wallet:new Map(),profiles:[]};
+function sourceName(v){return ({buying_list:'Buying List',custom_submission:'Custom Submission',solo_task:'Solo Task',manual_entry:'Manual Entry'}[v]||String(v||'—')).replace('_',' ')}
+async function loadSupplierReportAdmin(){
+ if(typeof sb==='undefined'||!sb||!E('e8SupReportRows'))return;
+ var q=await Promise.all([
+  sb.from('supplier_earnings_ledger').select('*').order('created_at',{ascending:false}),
+  sb.from('profiles').select('id,name').eq('role','supplier').order('name'),
+  sb.rpc('supplier_wallet')
+ ]);
+ if(q.some(function(x){return x.error}))return;
+ cache.rows=q[0].data||[];cache.profiles=q[1].data||[];cache.wallet=new Map((q[2].data||[]).map(function(x){return [x.supplier_id,x]}));
+ var sel=E('e8SupReportFilter'),old=sel.value;
+ sel.innerHTML='<option value="">All suppliers</option>'+cache.profiles.map(function(p){return '<option value="'+p.id+'">'+X(p.name)+'</option>'}).join('');
+ if(old && cache.profiles.some(function(p){return p.id===old}))sel.value=old;
+ render();
+}
+function render(){
+ var sid=E('e8SupReportFilter').value,rows=cache.rows.filter(function(r){return !sid||r.supplier_id===sid}),nameMap=new Map(cache.profiles.map(function(p){return [p.id,p.name]}));
+ var total=rows.reduce(function(t,r){return t+Number(r.total||0)},0),collected=rows.filter(function(r){return r.status==='collected'}).reduce(function(t,r){return t+Number(r.total||0)-Number(r.paid_amount||0)},0),paid=rows.filter(function(r){return r.status==='paid'}).reduce(function(t,r){return t+Number(r.paid_amount||r.total||0)},0),qty=rows.filter(function(r){return r.status!=='cancelled'}).reduce(function(t,r){return t+Number(r.quantity||0)},0);
+ E('e8SupReportStats').innerHTML=stat('LEDGER VALUE',M(total),'var(--cy)')+stat('PAYABLE',M(collected),'var(--am)')+stat('PAID',M(paid),'var(--gr)')+stat('UNITS',qty,'var(--bl)');
+ E('e8SupReportRows').innerHTML=rows.map(function(r){return '<tr><td>'+new Date(r.created_at).toLocaleDateString()+'</td><td>'+X(nameMap.get(r.supplier_id)||'Supplier')+'</td><td>'+X(r.item_name)+'</td><td>'+Number(r.quantity||0)+'</td><td>'+M(r.rate)+'</td><td>'+M(r.total)+'</td><td>'+X(sourceName(r.source_type))+'</td><td><span class="tag t-'+X(r.status)+'">'+X(String(r.status||'').toUpperCase())+'</span></td></tr>'}).join('')||'<tr><td colspan="8" class="empty">No supplier ledger records yet.</td></tr>';
+ E('e8SupReportMeta').textContent=rows.length+' record'+(rows.length===1?'':'s')+(sid?' · '+(nameMap.get(sid)||'Supplier'):'');
+}
+E('e8SupReportFilter')?.addEventListener('change',render);
+window.e8LoadSupplierReportAdmin=loadSupplierReportAdmin;
+window.addEventListener('load',function(){setTimeout(loadSupplierReportAdmin,1400);});
+})();
 </script><script id="e8-live-sync">
 (function(){
-  const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests'];
-  let ch=null,timer=0,started=false;
-  function refresh(){
-    clearTimeout(timer);
-    timer=setTimeout(function(){
-      try{
-        if(typeof rqLoad==='function' && document.getElementById('rqApp') && !document.getElementById('rqApp').hidden) rqLoad();
-      }catch(e){}
-      try{
-        if(typeof load==='function' && document.getElementById('app') && !document.getElementById('app').hidden) load();
-      }catch(e){}
-      try{if(typeof loadSupplierWorkflow==='function')loadSupplierWorkflow()}catch(e){}
-    },300);
-  }
-  function start(){
-    if(started||typeof sb==='undefined'||!sb)return;
-    started=true;
-    ch=sb.channel('elev8-live-sync');
-    TABLES.forEach(function(table){
-      ch.on('postgres_changes',{event:'*',schema:'public',table:table},refresh);
-    });
-    ch.subscribe();
-  }
-  setInterval(start,1000);
-  window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
+'use strict';
+const TABLES=['profiles','requests','responses','messages','dms','announcements','supplier_payment','payment_edit_requests','updates','buying_lists','supplier_earnings_ledger','custom_submissions','custom_submission_items','custom_submission_revisions','solo_tasks','solo_task_items','solo_task_revisions','withdrawal_availability','withdrawal_requests','avatars'];
+let ch=null,timer=0,started=false;
+function refresh(){clearTimeout(timer);timer=setTimeout(function(){
+ try{if(typeof rqLoad==='function'&&document.getElementById('rqApp')&&!document.getElementById('rqApp').hidden)rqLoad()}catch(e){}
+ try{if(typeof load==='function'&&document.getElementById('app')&&!document.getElementById('app').hidden)load()}catch(e){}
+ try{if(typeof window.e8LoadSupplierReportAdmin==='function'&&document.getElementById('sup')&&!document.getElementById('sup').hidden)window.e8LoadSupplierReportAdmin()}catch(e){}
+ try{if(typeof window.e8LoadPayAdmin==='function'&&document.getElementById('payments')&&!document.getElementById('payments').hidden)window.e8LoadPayAdmin()}catch(e){}
+ try{if(typeof window.e8LoadSupplierReport==='function'&&document.getElementById('vRep')&&!document.getElementById('vRep').hidden)window.e8LoadSupplierReport()}catch(e){}
+ try{if(typeof window.e8LoadPaySupplier==='function'&&document.getElementById('vWithdraw')&&!document.getElementById('vWithdraw').hidden)window.e8LoadPaySupplier()}catch(e){}
+ try{if(typeof loadSupplierWorkflow==='function')loadSupplierWorkflow()}catch(e){}
+},350)}
+function start(){if(started||typeof sb==='undefined'||!sb)return;started=true;ch=sb.channel('elev8-live-sync');TABLES.forEach(function(table){ch.on('postgres_changes',{event:'*',schema:'public',table:table},refresh)});ch.subscribe()}
+setInterval(start,1000);
+window.addEventListener('beforeunload',function(){if(ch&&typeof sb!=='undefined')sb.removeChannel(ch)});
 })();
 </script></body></html>
