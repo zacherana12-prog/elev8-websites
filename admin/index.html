@@ -187,6 +187,17 @@ td input,td select{color:#FFFFFF;background:#080B17;border-color:rgba(255,255,25
   td{font-size:13px}
 }
 
+
+/* ELEV8 animated site background */
+html{background:#05060a!important}
+body{background:transparent!important;position:relative;isolation:isolate}
+#e8SiteBg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-4;pointer-events:none;opacity:.34;filter:brightness(.38) saturate(.88) contrast(1.04);transform:scale(1.02)}
+#e8SiteBgShade{position:fixed;inset:0;z-index:-3;pointer-events:none;background:
+  radial-gradient(70% 55% at 78% 15%,rgba(85,92,255,.11),transparent 70%),
+  radial-gradient(55% 45% at 10% 88%,rgba(255,55,165,.08),transparent 72%),
+  linear-gradient(180deg,rgba(4,6,12,.48),rgba(4,6,12,.78))}
+@media(prefers-reduced-motion:reduce){#e8SiteBg{display:none!important}}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -406,7 +417,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 }
 
 </style>
-</head><body class="e8admin">
+</head><body class="e8admin"><video id="e8SiteBg" autoplay muted loop playsinline preload="auto" aria-hidden="true"><source src="./assets/siteeeee.mp4" type="video/mp4"></video><div id="e8SiteBgShade" aria-hidden="true"></div>
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
 <nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
 <main>
