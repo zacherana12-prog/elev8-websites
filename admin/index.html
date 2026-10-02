@@ -1880,7 +1880,9 @@ document.addEventListener('click',async function(ev){
   statusEl.disabled=false;ev.target.disabled=false;
   if(u.error){E('e8SupReportMeta').textContent='Ledger update failed: '+u.error.message;return}
   E('e8SupReportMeta').textContent='Ledger status saved · '+st.toUpperCase()+' · '+new Date().toLocaleTimeString();
-  await loadSupplierReportAdmin();if(typeof loadPayAdmin==='function')loadPayAdmin();return;
+  if(typeof window.e8LoadSupplierReportAdmin==='function')await window.e8LoadSupplierReportAdmin();
+  if(typeof window.e8LoadPayAdmin==='function')window.e8LoadPayAdmin();
+  return;
  }
  if(d.lsave){var tr=ev.target.closest('tr'),sup=tr.querySelector('[data-lsup="'+d.lsave+'"]').value,item=tr.querySelector('[data-lf="item_name"]').value.trim(),qty=Math.max(1,Number(tr.querySelector('[data-lf="quantity"]').value)||1),rate=Math.max(0,Number(tr.querySelector('[data-lf="rate"]').value)||0),paid=Math.max(0,Number(tr.querySelector('[data-lf="paid_amount"]').value)||0),st=tr.querySelector('[data-lf="status"]').value;
   var prev=tr.querySelector('[data-lf="status"]').dataset.prev||'';if(st==='paid')paid=qty*rate;else if(prev==='paid'&&st!=='paid')paid=0;paid=Math.min(paid,qty*rate);
