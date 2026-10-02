@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ELEV8 Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Nunito+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 
 :root{--bg:#05050b;--s1:#080914;--s2:#0b0d18;--s3:#101326;--card:rgba(15,17,39,.78);--card2:rgba(9,11,25,.9);--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--tx:#f7f7fb;--mu:#a7acc2;--dim:#69718e;--cy:#37e4ff;--pk:#ff3aa4;--pu:#866bff;--gr:#3df0ae;--am:#ffc85b;--rd:#ff5273;--hero:none;--frame:none;--sans:'Sora',system-ui,sans-serif;--body:'Geist','Segoe UI',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -1119,7 +1119,31 @@ body .stat b{font-family:var(--e-mono)!important}
 body aside .by{color:var(--e-mu)!important;font:500 13px var(--e-ui)!important;text-transform:none!important;letter-spacing:0!important}
 #auth{margin-top:3vh!important;border-radius:var(--e-r3)!important;min-height:0!important}#auth::after{display:none!important}
 #auth .logo{font-size:22px!important}.e8land{margin-top:4vh}
-</style><script id="e8-v3-js">/* ===== ELEV8 v3 interaction layer (presentation only; app logic untouched) ===== */
+<style id="e8-typography-status">
+/* ELEV8 typography + compact admin status panel */
+body,button,input,select,textarea{font-family:'Nunito Sans',system-ui,sans-serif!important}
+h1,h2,h3,.logo,.stat b{font-family:'Nunito',system-ui,sans-serif!important}
+#e8Pres{width:100%;overflow:hidden}
+#e8Pres .e8prof{
+  padding:10px!important;
+  margin:10px 0 0!important;
+  gap:7px!important;
+  border-radius:10px!important;
+}
+#e8Pres .e8prof h3{font-size:12px!important;line-height:1.2!important;margin:0 0 3px!important;letter-spacing:.02em!important;text-transform:none!important}
+#e8Pres .e8prof .row{grid-template-columns:1fr!important;gap:7px!important}
+#e8Pres .e8prof label{font-size:10px!important;gap:4px!important}
+#e8Pres .e8prof input,#e8Pres .e8prof select,#e8Pres .e8prof textarea{
+  padding:7px 8px!important;
+  min-height:32px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+}
+#e8Pres .e8prof textarea{min-height:50px!important}
+#e8Pres .e8tools{gap:6px!important}
+#e8Pres .e8tools .btn{padding:7px 9px!important;font-size:10px!important;letter-spacing:.03em!important}
+#e8Pres .e8live{font-size:10px!important;min-height:14px!important}
+</style></style><script id="e8-v3-js">/* ===== ELEV8 v3 interaction layer (presentation only; app logic untouched) ===== */
 (()=>{
 const $=id=>document.getElementById(id),RT=document.documentElement,IS_ADMIN=document.body.classList.contains('e8admin');
 const LS={get(k,d){try{return localStorage.getItem(k)||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
