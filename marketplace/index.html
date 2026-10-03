@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ELEV8 Marketplace</title>
+<meta name="description" content="ELEV8 — secure marketplace for premium in-game items.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#06070b;--s1:#0b0d13;--s2:#10131b;--s3:#151a24;--line:#242b38;--line2:#303b4c;--tx:#f7f9fc;--mu:#929cab;--dim:#606b7c;--cy:#37ddff;--pk:#ff3a9d;--pu:#8b6cff;--gr:#39e9a5;--am:#ffc85b;--rd:#ff5a76;--sans:'Manrope',system-ui,sans-serif;--disp:'Sora',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;background:var(--bg)}body{margin:0;color:var(--tx);font:14px/1.55 var(--sans);background:radial-gradient(900px 500px at 80% -10%,#37ddff18,transparent 62%),radial-gradient(800px 500px at 0 80%,#ff3a9d13,transparent 65%),var(--bg);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(#ffffff05 1px,transparent 1px),linear-gradient(90deg,#ffffff05 1px,transparent 1px);background-size:64px 64px;mask-image:linear-gradient(180deg,#000,transparent 90%)}
+button,input,textarea,select{font:inherit}button{cursor:pointer}.wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+header{position:sticky;top:0;z-index:20;border-bottom:1px solid #ffffff10;background:#07090df0;backdrop-filter:blur(18px)}
+.nav{height:70px;display:flex;align-items:center;gap:18px}.brand{font:800 16px/1 var(--disp);letter-spacing:.18em}.brand span{color:var(--cy)}.navlinks{display:flex;gap:6px;margin-left:auto}.navbtn{background:none;border:1px solid transparent;color:var(--mu);padding:9px 12px;border-radius:9px}.navbtn:hover{color:#fff;background:#ffffff06;border-color:var(--line)}.account{display:flex;align-items:center;gap:8px}.avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--cy),var(--pk));color:#061016;font-weight:800;font-size:11px}
+.hero{padding:72px 0 42px}.heroGrid{display:grid;grid-template-columns:1.2fr .8fr;gap:30px;align-items:end}.eyebrow{font:600 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cy);margin-bottom:13px}.hero h1{font:800 clamp(42px,6vw,78px)/.95 var(--disp);letter-spacing:-.05em;margin:0;max-width:850px}.hero h1 span{background:linear-gradient(90deg,#fff,#9eefff 55%,#ff9dce);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:670px;color:var(--mu);font-size:16px;margin:18px 0 0}.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.trustCard{border:1px solid var(--line);background:linear-gradient(180deg,#111620cc,#0a0d14cc);padding:15px;border-radius:12px}.trustCard b{display:block;font:700 12px var(--mono);margin-bottom:5px}.trustCard small{color:var(--mu)}
+.toolbar{display:grid;grid-template-columns:1.6fr 1fr auto;gap:10px;margin-bottom:18px}.input{width:100%;padding:13px 14px;color:#fff;background:#0b0e15;border:1px solid var(--line);border-radius:10px;outline:none}.input:focus{border-color:#37ddff88;box-shadow:0 0 0 3px #37ddff16}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:#0d1118;color:var(--mu);padding:9px 12px;border-radius:999px}.chip.on,.chip:hover{color:#fff;border-color:#37ddff55;background:#37ddff10}
+.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:20px 0 14px}.sectionHead h2{font:700 24px var(--disp);letter-spacing:-.03em;margin:0}.sectionHead small{color:var(--mu)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding-bottom:60px}.card{position:relative;border:1px solid var(--line);background:linear-gradient(180deg,#121722,#0b0e14);border-radius:14px;overflow:hidden;transition:.2s}.card:hover{transform:translateY(-2px);border-color:#37ddff44;box-shadow:0 22px 50px -36px #000,0 0 24px -18px #37ddff}.thumb{aspect-ratio:1.22;background:radial-gradient(circle at 30% 25%,#37ddff14,transparent 45%),radial-gradient(circle at 80% 70%,#ff3a9d12,transparent 55%),#0d1118;display:grid;place-items:center;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover}.placeholder{font:800 32px var(--disp);color:#ffffff16;letter-spacing:.1em}.body{padding:14px}.pillrow{display:flex;justify-content:space-between;gap:8px;align-items:center}.badge{font:600 9px var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--gr)}.badge.warn{color:var(--am)}.title{font:700 16px var(--disp);margin:10px 0 4px}.ms{color:var(--mu);font-size:12px}.priceRow{display:flex;align-items:end;justify-content:space-between;gap:8px;margin-top:16px}.price{font:800 20px var(--disp)}.stock{color:var(--mu);font-size:11px;text-align:right}.cardBtn{width:100%;margin-top:13px;padding:11px;border-radius:9px;background:linear-gradient(180deg,#19222e,#101722);border:1px solid #37ddff66;color:#fff;font-weight:700}.cardBtn:hover{background:#37ddff10}.empty{border:1px dashed var(--line2);padding:40px;text-align:center;color:var(--mu);grid-column:1/-1;border-radius:14px}
+footer{border-top:1px solid var(--line);padding:28px 0 50px;color:var(--mu);font-size:12px}.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.secure{color:var(--gr);font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.overlay{position:fixed;inset:0;z-index:50;background:#000b;display:none;align-items:center;justify-content:center;padding:18px}.overlay.open{display:flex}.modal{width:min(680px,100%);max-height:90vh;overflow:auto;border:1px solid var(--line2);background:linear-gradient(180deg,#111620,#090c12);border-radius:16px;box-shadow:0 40px 100px -50px #000}.modalHead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line)}.modalHead h3{font:700 18px var(--disp);margin:0}.x{background:none;border:0;color:var(--mu);font-size:22px}.modalBody{padding:20px}.form{display:grid;gap:12px}.label{display:grid;gap:6px;color:var(--mu);font-size:12px}.primary{border:1px solid #ff71b4aa;background:linear-gradient(180deg,#ff4cab,#d62f83);color:#fff;border-radius:9px;padding:11px 14px;font-weight:800}.secondary{border:1px solid var(--line2);background:#0b0e15;color:#fff;border-radius:9px;padding:11px 14px;font-weight:700}.row{display:flex;gap:8px;flex-wrap:wrap}.status{padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:#0b0e15;color:var(--mu)}.status.ok{color:var(--gr);border-color:#39e9a533;background:#39e9a50b}.status.warn{color:var(--am);border-color:#ffc85b33;background:#ffc85b0b}
+.payGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.pay{border:1px solid var(--line);background:#0b0e15;border-radius:10px;padding:12px;text-align:left;color:#fff}.pay span{display:block;font-weight:700}.pay small{display:block;color:var(--mu);margin-top:4px}.pay.disabled{opacity:.48;cursor:not-allowed}.order{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;background:#0d1118}.orderTop{display:flex;justify-content:space-between;gap:12px}.mono{font-family:var(--mono)}.orderMeta{color:var(--mu);font-size:12px;margin-top:7px}.state{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.1em}.state.sec{color:var(--gr)}.state.wait{color:var(--am)}.state.disp{color:var(--rd)}
+.notice{padding:12px 13px;border:1px solid #37ddff29;background:#37ddff08;color:#b8c7d9;border-radius:10px;font-size:12px;line-height:1.6}.notice strong{color:#fff}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}.heroGrid{grid-template-columns:1fr}.trust{max-width:740px}.toolbar{grid-template-columns:1fr 1fr auto}}
+@media(max-width:720px){.navlinks{display:none}.grid{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr}.trust{grid-template-columns:1fr}.hero{padding-top:52px}.hero h1{font-size:47px}}
+@media(max-width:470px){.grid{grid-template-columns:1fr}.wrap{padding:0 14px}.hero h1{font-size:41px}.payGrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="brand"><span>ELEV8</span> MARKET</div>
+  <div class="navlinks">
+    <button class="navbtn" id="homeBtn">Marketplace</button>
+    <button class="navbtn" id="ordersBtn">My Orders</button>
+  </div>
+  <div class="account">
+    <button class="navbtn" id="authBtn">Sign in</button>
+    <div class="avatar" id="avatar" hidden>?</div>
+  </div>
+</div></header>
+
+<main>
+<div class="wrap">
+  <section class="hero">
+    <div class="heroGrid">
+      <div>
+        <div class="eyebrow">ELEV8 / SECURE DIGITAL MARKET</div>
+        <h1>BUY <span>PREMIUM</span> IN-GAME ITEMS.<br>DELIVERED SECURELY.</h1>
+        <p>A customer-facing marketplace backed by the same ELEV8 inventory and operations system. Stock is reserved per order and escrow status is tracked through the transaction lifecycle.</p>
+      </div>
+      <div class="trust">
+        <div class="trustCard"><b>01 / SECURED</b><small>Payment status and escrow state are tracked separately from the buyer UI.</small></div>
+        <div class="trustCard"><b>02 / RESERVED</b><small>Limited stock can be reserved atomically before payment confirmation.</small></div>
+        <div class="trustCard"><b>03 / PROTECTED</b><small>Delivery, confirmation and disputes are recorded against the order.</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="market">
+    <div class="toolbar">
+      <input class="input" id="search" placeholder="Search items, M/s, categories…">
+      <select class="input" id="sort"><option value="featured">Featured</option><option value="newest">Newest</option><option value="priceLow">Price: low → high</option><option value="priceHigh">Price: high → low</option></select>
+      <button class="secondary" id="refreshBtn">Refresh</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="sectionHead"><h2>Available inventory</h2><small id="count">Loading marketplace…</small></div>
+    <div class="grid" id="grid"><div class="empty">Loading listings…</div></div>
+  </section>
+</div>
+</main>
+
+<footer><div class="wrap foot"><div><strong style="color:#fff">ELEV8</strong> · Secure digital marketplace</div><div class="secure">Escrow workflow enabled · Payment providers connect server-side</div></div></footer>
+
+<div class="overlay" id="authOverlay"><div class="modal">
+  <div class="modalHead"><h3>Customer account</h3><button class="x" data-close="authOverlay">×</button></div>
+  <div class="modalBody">
+    <div class="notice" style="margin-bottom:14px">Orders require an authenticated customer account so ELEV8 can securely attach payments, delivery records and disputes to the buyer.</div>
+    <form class="form" id="authForm">
+      <label class="label">Email<input class="input" name="email" type="email" required autocomplete="email"></label>
+      <label class="label">Password<input class="input" name="password" type="password" required minlength="6" autocomplete="current-password"></label>
+      <div class="row"><button class="primary" type="submit" id="loginBtn">Sign in</button><button class="secondary" type="button" id="signupBtn">Create account</button></div>
+      <div id="authMsg" class="status"></div>
+    </form>
+  </div>
+</div></div>
+
+<div class="overlay" id="listingOverlay"><div class="modal">
+  <div class="modalHead"><h3 id="listingTitle">Item</h3><button class="x" data-close="listingOverlay">×</button></div>
+  <div class="modalBody" id="listingBody"></div>
+</div></div>
+
+<div class="overlay" id="checkoutOverlay"><div class="modal">
+  <div class="modalHead"><h3>Secure checkout</h3><button class="x" data-close="checkoutOverlay">×</button></div>
+  <div class="modalBody">
+    <div id="checkoutSummary" class="order" style="margin-bottom:14px"></div>
+    <div class="notice" style="margin-bottom:14px"><strong>Escrow flow:</strong> payment is verified by the provider first. Only after verified payment is the order marked <span class="mono">SECURED</span> and released to seller fulfillment.</div>
+    <div class="label" style="margin-bottom:7px">Payment methods</div>
+    <div class="payGrid" id="payGrid"></div>
+    <div id="checkoutMsg" class="status warn" style="margin-top:12px"></div>
+    <div class="row" style="margin-top:14px"><button class="primary" id="startCheckout" disabled>Continue to payment</button><button class="secondary" data-close="checkoutOverlay">Cancel</button></div>
+  </div>
+</div></div>
+
+<div class="overlay" id="ordersOverlay"><div class="modal">
+  <div class="modalHead"><h3>My orders</h3><button class="x" data-close="ordersOverlay">×</button></div>
+  <div class="modalBody" id="ordersBody"></div>
+</div></div>
+
+<script>
+const SB_URL='https://fdilcxkrztfedsavtmmk.supabase.co';
+const SB_KEY='sb_publishable_CBg1xNowPN_Qy-9B0J-mYQ_z9NW8Fx_';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'elev8-market-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'$'+Number(n||0).toFixed(2);
+const stateLabel=s=>String(s||'').replaceAll('_',' ');
+let listings=[],categories=[],chosen=null,user=null;
+
+function open(id){$('#'+id).classList.add('open')}
+function close(id){$('#'+id).classList.remove('open')}
+document.addEventListener('click',e=>{const c=e.target.closest('[data-close]');if(c)close(c.dataset.close)});
+
+function initials(email){return (email||'?').trim().slice(0,1).toUpperCase()}
+function syncAccount(){
+  $('#avatar').hidden=!user;
+  $('#authBtn').textContent=user?(user.email||'Account'):'Sign in';
+  $('#avatar').textContent=user?initials(user.email):'?';
+}
+
+async function loadCategories(){
+  const set=new Set(['All']);
+  listings.forEach(x=>set.add(x.category||'Gaming Items'));
+  categories=[...set];
+  $('#chips').innerHTML=categories.map((x,i)=>'<button class="chip'+(i===0?' on':'')+'" data-cat="'+esc(x)+'">'+esc(x)+'</button>').join('');
+}
+function filtered(){
+  const q=$('#search').value.trim().toLowerCase(),cat=$('.chip.on')?.dataset.cat||'All',sort=$('#sort').value;
+  let a=listings.filter(x=>(cat==='All'||x.category===cat)&&(!q||[x.title,x.inventory_name,x.ms,x.category].filter(Boolean).join(' ').toLowerCase().includes(q))&&Number(x.available_quantity)>0);
+  if(sort==='priceLow')a.sort((a,b)=>a.price_usd-b.price_usd);
+  else if(sort==='priceHigh')a.sort((a,b)=>b.price_usd-a.price_usd);
+  else if(sort==='newest')a.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  else a.sort((a,b)=>Number(b.featured)-Number(a.featured)||new Date(b.created_at)-new Date(a.created_at));
+  return a;
+}
+function render(){
+  const a=filtered();$('#count').textContent=a.length+' listing'+(a.length===1?'':'s');
+  $('#grid').innerHTML=a.length?a.map(x=>'<article class="card">'+
+    '<div class="thumb">'+(x.image_url?'<img loading="lazy" src="'+esc(x.image_url)+'" alt="'+esc(x.title)+'">':'<div class="placeholder">E8</div>')+'</div>'+
+    '<div class="body"><div class="pillrow"><span class="badge">'+(x.featured?'FEATURED':'AVAILABLE')+'</span><span class="ms">'+esc(x.category)+'</span></div>'+
+    '<div class="title">'+esc(x.title)+'</div><div class="ms">'+esc(x.ms||'Standard delivery')+'</div>'+
+    '<div class="priceRow"><div><div class="price">'+money(x.price_usd)+'</div></div><div class="stock">'+Number(x.available_quantity)+' available</div></div>'+
+    '<button class="cardBtn" data-buy="'+esc(x.id)+'">View &amp; buy</button></div></article>').join(''):'<div class="empty">No matching inventory is currently published.</div>';
+}
+function openListing(id){
+  const x=listings.find(v=>v.id===id);if(!x)return;
+  chosen=x;
+  $('#listingTitle').textContent=x.title;
+  $('#listingBody').innerHTML='<div style="display:grid;gap:14px">'+
+    (x.image_url?'<img src="'+esc(x.image_url)+'" alt="'+esc(x.title)+'" style="width:100%;max-height:300px;object-fit:cover;border-radius:11px;border:1px solid var(--line)">':'')+
+    '<div><div class="badge">'+(x.featured?'FEATURED LISTING':'LIVE LISTING')+'</div><h2 style="font:800 26px var(--disp);margin:7px 0">'+esc(x.title)+'</h2>'+
+    '<div style="color:var(--mu)">'+esc(x.description||'Premium in-game item listed through ELEV8.')+'</div></div>'+
+    '<div class="order"><div style="display:flex;justify-content:space-between;gap:8px"><span>Price</span><strong>'+money(x.price_usd)+'</strong></div>'+
+    '<div class="orderMeta">Available: '+Number(x.available_quantity)+' · Delivery: '+esc(x.delivery_type)+' · Target window: '+Number(x.delivery_window_minutes)+' min</div></div>'+
+    '<div class="row"><button class="primary" id="buyNow">Buy securely</button><button class="secondary" data-close="listingOverlay">Close</button></div>'+
+    '<div class="notice">Orders use an atomic inventory reservation. Payment must be verified before the escrow state changes to secured.</div></div>';
+  open('listingOverlay');
+}
+async function ensureUser(){
+  if(user)return true;
+  open('authOverlay');$('#authMsg').className='status warn';$('#authMsg').textContent='Sign in or create a customer account to continue.';
+  return false;
+}
+function showCheckout(){
+  $('#checkoutSummary').innerHTML='<div class="orderTop"><strong>'+esc(chosen.title)+'</strong><strong>'+money(chosen.price_usd)+'</strong></div><div class="orderMeta">'+Number(chosen.available_quantity)+' units available · Seller-side escrow workflow</div>';
+  $('#payGrid').innerHTML='<div class="empty" style="grid-column:1/-1;padding:22px">No payment providers are active yet. The checkout shell is ready, but ELEV8 will not take a payment until a verified provider integration is enabled.</div>';
+  $('#checkoutMsg').textContent='Payment gateway connection required before live checkout. No customer funds are collected by this page.';
+  $('#startCheckout').disabled=true;
+  open('checkoutOverlay');
+}
+async function loadListings(){
+  const {data,error}=await sb.from('marketplace_public_listings').select('*').order('featured',{ascending:false}).order('created_at',{ascending:false});
+  if(error){$('#grid').innerHTML='<div class="empty">Marketplace data could not be loaded. '+esc(error.message)+'</div>';$('#count').textContent='Connection error';return}
+  listings=data||[];await loadCategories();render();
+}
+async function loadOrders(){
+  if(!user){$('#ordersBody').innerHTML='<div class="empty">Sign in to view your orders.</div>';open('ordersOverlay');return}
+  const {data,error}=await sb.from('marketplace_orders').select('order_number,status,payment_status,escrow_status,quantity,unit_price_usd,subtotal_usd,platform_fee_usd,seller_amount_usd,created_at,delivered_at,buyer_confirmed_at').order('created_at',{ascending:false}).limit(30);
+  if(error){$('#ordersBody').innerHTML='<div class="status warn">'+esc(error.message)+'</div>';open('ordersOverlay');return}
+  const rows=data||[];
+  $('#ordersBody').innerHTML=rows.length?rows.map(o=>'<div class="order"><div class="orderTop"><div><strong class="mono">'+esc(o.order_number)+'</strong><div class="orderMeta">'+new Date(o.created_at).toLocaleString()+'</div></div><div class="state '+(o.status==='completed'?'sec':o.status==='disputed'?'disp':'wait')+'">'+esc(stateLabel(o.status))+'</div></div><div class="orderMeta">Payment: '+esc(stateLabel(o.payment_status))+' · Escrow: '+esc(stateLabel(o.escrow_status))+' · Qty: '+Number(o.quantity)+' · Total: '+money(o.subtotal_usd)+'</div></div>').join(''):'<div class="empty">No orders yet.</div>';
+  open('ordersOverlay');
+}
+$('#authForm').addEventListener('submit',async e=>{
+  e.preventDefault();const f=new FormData(e.target),email=String(f.get('email')).trim(),password=String(f.get('password'));
+  $('#authMsg').className='status warn';$('#authMsg').textContent='Signing in…';
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){$('#authMsg').textContent=error.message;return}
+  user=data.user;syncAccount();close('authOverlay');$('#authForm').reset();
+});
+$('#signupBtn').onclick=async()=>{
+  const f=new FormData($('#authForm')),email=String(f.get('email')).trim(),password=String(f.get('password'));
+  if(!email||password.length<6){$('#authMsg').className='status warn';$('#authMsg').textContent='Enter an email and a password with at least 6 characters.';return}
+  $('#authMsg').className='status warn';$('#authMsg').textContent='Creating account…';
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){$('#authMsg').textContent=error.message;return}
+  if(data.user&&data.session){user=data.user;syncAccount();close('authOverlay');return}
+  $('#authMsg').className='status ok';$('#authMsg').textContent='Account created. Check your email to confirm the account before signing in.';
+};
+$('#authBtn').onclick=async()=>{if(user){await sb.auth.signOut();return}open('authOverlay')};
+$('#ordersBtn').onclick=loadOrders;$('#homeBtn').onclick=()=>scrollTo({top:0,behavior:'smooth'});$('#refreshBtn').onclick=loadListings;
+$('#search').oninput=render;$('#sort').onchange=render;
+document.addEventListener('click',async e=>{
+  const cat=e.target.closest('[data-cat]');if(cat){document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));cat.classList.add('on');render();return}
+  const buy=e.target.closest('[data-buy]');if(buy){openListing(buy.dataset.buy);return}
+  if(e.target.id==='buyNow'){close('listingOverlay');if(await ensureUser())showCheckout()}
+});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(x=>x.classList.remove('open'))});
+sb.auth.onAuthStateChange((_event,session)=>{user=session?.user||null;syncAccount()});
+sb.channel('marketplace-public')
+ .on('postgres_changes',{event:'*',schema:'public',table:'marketplace_listings'},loadListings)
+ .on('postgres_changes',{event:'*',schema:'public',table:'inventory_items'},loadListings)
+ .subscribe();
+(async()=>{const {data}=await sb.auth.getSession();user=data.session?.user||null;syncAccount();await loadListings()})();
+</script>
+</body>
+</html>
