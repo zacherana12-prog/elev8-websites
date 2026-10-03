@@ -43,3 +43,85 @@ create table if not exists public.marketplace_public_seller_profiles (
   updated_at timestamptz not null default now()
 );
 alter table public.marketplace_public_seller_profiles enable row level security;
+
+
+create or replace function public.sync_marketplace_public_seller_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.seller_status = 'approved' then
+    insert into public.marketplace_public_seller_profiles
+      (user_id, display_name, bio, avatar_url, seller_verified_at, updated_at)
+    values
+      (new.user_id, coalesce(nullif(new.display_name,''),'ELEV8 Seller'), new.bio, new.avatar_url, new.seller_verified_at, now())
+    on conflict (user_id) do update set
+      display_name = excluded.display_name,
+      bio = excluded.bio,
+      avatar_url = excluded.avatar_url,
+      seller_verified_at = excluded.seller_verified_at,
+      updated_at = now();
+  else
+    delete from public.marketplace_public_seller_profiles where user_id = new.user_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_sync_marketplace_public_seller_profile on public.marketplace_profiles;
+create trigger trg_sync_marketplace_public_seller_profile
+after insert or update of display_name, bio, avatar_url, seller_status, seller_verified_at
+on public.marketplace_profiles
+for each row execute function public.sync_marketplace_public_seller_profile();
+
+create or replace function public.review_seller_verification(
+  p_request_id uuid,
+  p_status text,
+  p_admin_note text default null
+)
+returns public.seller_verification_requests
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  r public.seller_verification_requests;
+begin
+  if me is null or not public.is_admin() then raise exception 'Admin access required.'; end if;
+  if p_status not in ('approved','denied') then raise exception 'Invalid seller verification status.'; end if;
+
+  select * into r from public.seller_verification_requests where id=p_request_id for update;
+  if not found then raise exception 'Seller verification request not found.'; end if;
+  if r.status <> 'pending' then raise exception 'Only pending applications can be reviewed.'; end if;
+
+  update public.seller_verification_requests
+  set status=p_status,
+      admin_note=nullif(trim(coalesce(p_admin_note,'')),''),
+      reviewed_by=me,
+      reviewed_at=now(),
+      updated_at=now()
+  where id=r.id
+  returning * into r;
+
+  insert into public.marketplace_profiles
+    (user_id,display_name,seller_status,seller_verified_at,seller_review_note,updated_at)
+  values
+    (r.user_id,coalesce(nullif(r.display_name,''),'ELEV8 User'),p_status,
+     case when p_status='approved' then now() else null end,r.admin_note,now())
+  on conflict (user_id) do update set
+    display_name=excluded.display_name,
+    seller_status=excluded.seller_status,
+    seller_verified_at=excluded.seller_verified_at,
+    seller_review_note=excluded.seller_review_note,
+    updated_at=now();
+
+  return r;
+end;
+$$;
+
+revoke all on function public.review_seller_verification(uuid,text,text) from public,anon,authenticated;
+grant execute on function public.review_seller_verification(uuid,text,text) to authenticated;
+revoke all on function public.sync_marketplace_public_seller_profile() from public,anon,authenticated;
