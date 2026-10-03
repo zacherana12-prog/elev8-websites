@@ -488,6 +488,119 @@ input,select,textarea{max-width:100%;min-width:0!important}
   .e8-wallet-action #e8WForm{grid-template-columns:1fr!important}
 }
 </style>
+
+<style id="e8-sleek-ui">
+/* ELEV8 — sleek utility UI */
+:root{
+  --e-bg:#08090c;--e-surface:#0d0f13;--e-surface2:#111419;
+  --e-border:#20242c;--e-border2:#2a2f38;--e-text:#f3f4f6;
+  --e-muted:#9aa1ad;--e-dim:#68707d;--e-accent:#e9c84a;
+  --e-green:#65d69b;--e-red:#e87883;--e-blue:#83b7ff;
+}
+html,body{background:var(--e-bg)!important;color:var(--e-text)!important}
+body{
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  font-size:13px!important;line-height:1.45!important;
+  text-shadow:none!important;overflow-x:hidden!important;
+}
+body::before,body::after,html::before{opacity:0!important;background:none!important}
+aside{
+  width:228px!important;flex-basis:228px!important;padding:14px 10px!important;
+  background:#0a0b0f!important;border-right:1px solid var(--e-border)!important;
+  box-shadow:none!important;backdrop-filter:none!important;
+}
+aside::before,aside::after{display:none!important}
+aside .logo{padding:3px 9px!important;font-size:12px!important;letter-spacing:.1em!important;color:#fff!important}
+.by{margin:6px 0 12px!important;padding:0 9px!important;color:var(--e-dim)!important}
+aside nav{margin:0!important;padding:4px!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:8px!important;gap:1px!important}
+aside nav button{
+  min-height:34px!important;padding:7px 9px 7px 34px!important;border-radius:7px!important;
+  color:#aeb4bf!important;background:transparent!important;border:1px solid transparent!important;
+  font-size:12px!important;font-weight:600!important;
+}
+aside nav button:hover{background:#12151a!important;color:#eef0f3!important;transform:none!important}
+aside nav button.on{
+  background:#17191e!important;color:#f5f6f8!important;border-color:#242831!important;
+  box-shadow:inset 2px 0 0 var(--e-accent)!important;
+}
+aside nav button::before{color:#5f6672!important}
+aside nav button.on::before{color:var(--e-accent)!important}
+main{max-width:none!important;padding:24px 28px 40px!important}
+main::before{margin-bottom:8px!important;color:#5f6672!important;font-size:8px!important;letter-spacing:.12em!important}
+.view.on{animation:none!important}
+h2{margin:0 0 16px!important;padding:0 0 10px!important;border-bottom:1px solid var(--e-border)!important;
+  border-image:none!important;font-size:23px!important;letter-spacing:-.025em!important}
+h3{margin:0 0 10px!important;font-size:9px!important;letter-spacing:.1em!important;color:#c7ccd5!important}
+h3::before{display:none!important}
+p,small{color:var(--e-muted)!important}
+.card,.stat{
+  background:var(--e-surface)!important;border:1px solid var(--e-border)!important;
+  box-shadow:none!important;backdrop-filter:none!important;border-radius:10px!important;
+}
+.card{padding:14px!important;margin-bottom:10px!important}
+.card:hover,.stat:hover{border-color:var(--e-border2)!important;box-shadow:none!important;transform:none!important}
+.grid{gap:8px!important;margin-bottom:10px!important}
+.stat{padding:10px 11px!important;min-height:72px!important;border-top:1px solid var(--e-border2)!important}
+.stat::before,.stat::after{display:none!important}
+.stat small{font-size:8px!important;letter-spacing:.08em!important;color:#8d95a1!important}
+.stat b{margin-top:5px!important;font-size:19px!important;color:#f2f3f5!important}
+label{font-size:11px!important;color:#aeb5c1!important;gap:5px!important}
+input,select,textarea{
+  background:#0a0c10!important;border:1px solid var(--e-border2)!important;
+  border-radius:7px!important;padding:8px 9px!important;min-height:34px!important;
+  font-size:12px!important;box-shadow:none!important;
+}
+input:hover,select:hover,textarea:hover{border-color:#353b45!important}
+input:focus,select:focus,textarea:focus{
+  border-color:#bca43e!important;box-shadow:0 0 0 2px rgba(233,200,74,.08)!important;
+}
+.btn{
+  min-height:34px!important;padding:8px 12px!important;border-radius:7px!important;
+  background:#e7e8ea!important;color:#101114!important;border:0!important;
+  box-shadow:none!important;font-size:10px!important;
+}
+.btn:hover{background:#fff!important;filter:none!important}
+.sm{
+  min-height:30px!important;padding:6px 9px!important;border-radius:7px!important;
+  background:#0d1014!important;color:#b5bbc5!important;border-color:#2a3038!important;
+  box-shadow:none!important;font-size:10px!important;
+}
+.sm:hover{background:#15191f!important;color:#fff!important;box-shadow:none!important}
+.wrap{overflow-x:hidden!important}
+table{min-width:0!important;width:100%!important;table-layout:fixed!important}
+th{padding:7px 6px!important;background:#0b0d11!important;border-bottom:1px solid var(--e-border2)!important;
+  color:#7f8793!important;font-size:8px!important;letter-spacing:.07em!important}
+td{padding:8px 6px!important;color:#e2e5ea!important;font-size:10.5px!important;white-space:normal!important;overflow-wrap:anywhere!important}
+tbody tr:hover{background:#101318!important}
+.tag{padding:3px 7px!important;font-size:8px!important}
+.e8-section-head{margin-bottom:8px!important}
+.e8-section-head span{font-size:10px!important;color:#7f8793!important}
+.e8-report-toolbar{margin-bottom:10px!important;padding:11px 12px!important;border-radius:10px!important;background:#0d1014!important;border:1px solid var(--e-border)!important}
+.e8-report-toolbar strong{font-size:12px!important}
+.e8-report-toolbar span{font-size:10px!important}
+.e8-compact-panel{margin-top:10px!important;border-color:var(--e-border)!important;background:#0d1014!important}
+.e8-compact-panel summary{padding:10px 2px!important;font-size:12px!important}
+.e8-management-grid{gap:8px!important;padding-bottom:10px!important}
+.e8-comm-hero{margin-bottom:10px!important;padding:12px 14px!important;border-radius:10px!important;background:#0d1014!important;border:1px solid var(--e-border)!important;box-shadow:none!important}
+.e8-comm-hero h2{font-size:20px!important}
+.e8-comm-hero p{font-size:10px!important}
+.e8-comm-grid{gap:10px!important}
+.e8-comm-card{min-height:420px!important}
+.e8-comm-card .e8-comm-card-head{padding-bottom:9px!important}
+@media(max-width:900px){aside{width:210px!important;flex-basis:210px!important}main{padding:20px 18px 32px!important}}
+@media(max-width:760px){
+  aside{width:100%!important;flex-basis:auto!important;padding:8px!important}
+  aside nav{display:flex!important;overflow:hidden!important;flex-wrap:wrap!important}
+  aside nav button{flex:1 1 30%!important;min-height:32px!important;padding:6px 8px 6px 28px!important;font-size:10px!important}
+  main{padding:16px 12px 26px!important}
+}
+@media(max-width:520px){
+  aside nav button{flex:1 1 46%!important}
+  h2{font-size:20px!important}
+  .card{padding:11px!important}
+  th{font-size:7px!important}.tag{font-size:7px!important}
+}
+</style>
 </head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
 <nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="market">Marketplace</button><button data-v="sellerverify">Seller Verification</button><button data-v="sup">Supplier Report &amp; Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="settings">Customization</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
