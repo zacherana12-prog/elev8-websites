@@ -2582,7 +2582,7 @@ window.addEventListener('load',function(){setTimeout(renderTabResetControls,900)
 (()=>{const M={loaded:false,inv:[],list:[],orders:[],payments:[],busy:new Set()};
  const q=s=>document.querySelector(s), msg=t=>{const x=q('#e8MarketMsg');if(x)x.textContent=t};
  const mEsc=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const money2=n=>'
+ const money2=n=>'USD '+Number(n||0).toFixed(2);
  async function load(){
    if(!sb){msg('Admin authentication is still loading.');return}
    const [ir,lr,or,pr]=await Promise.all([
