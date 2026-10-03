@@ -2646,41 +2646,4 @@ window.addEventListener('load',function(){setTimeout(renderTabResetControls,900)
  q('[data-v="sellerverify"]')?.addEventListener('click',()=>setTimeout(load,50));
  window.e8SellerVerification={load};
 })();
-</script></body></html>+Number(n||0).toFixed(2);
- async function load(){
-   if(!sb){msg('Admin authentication is still loading.');return}
-   const [ir,lr,or,pr]=await Promise.all([
-     sb.from('inventory_items').select('id,name,ms,quantity,sold_quantity,cost,selling_price_usd,status,supplier_id').neq('status','CANCELLED / REFUNDED').order('updated_at',{ascending:false}).limit(500),
-     sb.from('marketplace_listings').select('*').order('created_at',{ascending:false}).limit(500),
-     sb.from('marketplace_orders').select('id,order_number,status,payment_status,escrow_status,quantity,subtotal_usd,seller_amount_usd,created_at,seller_id').order('created_at',{ascending:false}).limit(50),
-     sb.from('marketplace_payment_methods').select('*').order('sort_order')
-   ]);
-   const err=[ir,lr,or,pr].find(x=>x.error);if(err){msg(err.error.message);return}
-   M.inv=ir.data||[];M.list=lr.data||[];M.orders=or.data||[];M.payments=pr.data||[];render();M.loaded=true;msg('Marketplace synchronized with the live inventory database.');
- }
- function render(){
-   const byId=new Map(M.list.map(x=>[x.inventory_item_id,x])),sellerIds=[...new Set(M.inv.map(x=>x.supplier_id).filter(Boolean))],sellerMap=new Map();
-   if(sellerIds.length)sb.from('profiles').select('id,name').in('id',sellerIds).then(({data})=>(data||[]).forEach(p=>sellerMap.set(p.id,p.name||'Supplier'));
-   const rows=M.inv.filter(i=>Number(i.quantity)>Number(i.sold_quantity)).map(i=>{
-     const l=byId.get(i.id),avail=Math.max(0,Number(i.quantity)-Number(i.sold_quantity));
-     return '<tr data-mi="'+i.id+'"><td><strong>'+mEsc(i.name)+'</strong><div style="color:var(--mu);font-size:10px">'+mEsc(i.ms||'')+'</div></td><td>'+mEsc(sellerMap.get(i.supplier_id)||'Platform')+'</td><td>'+money2(i.selling_price_usd)+'</td><td>'+avail+'</td><td><input data-mf="title" value="'+mEsc(l?.title||i.name)+'"></td><td><input data-mf="category" value="'+mEsc(l?.category||'Gaming Items')+'"></td><td><select data-mf="delivery"><option value="instant"'+(l?.delivery_type==='instant'?' selected':'')+'>Instant</option><option value="manual"'+(l?.delivery_type==='manual'||!l?' selected':'')+'>Manual</option><option value="account"'+(l?.delivery_type==='account'?' selected':'')+'>Account</option><option value="code"'+(l?.delivery_type==='code'?' selected':'')+'>Code</option></select></td><td><label style="display:flex;flex-direction:row;align-items:center;gap:6px"><input data-mf="published" type="checkbox" '+(l?.is_published?'checked':'')+' style="width:auto"><span style="font-size:10px">'+(l?.is_published?'LIVE':'OFF')+'</span></label></td><td><button class="sm" data-msave="'+i.id+'">'+(l?'Save':'Create')+'</button></td></tr>';
-   }).join('');
-   q('#e8MarketListings').innerHTML=rows||'<tr><td colspan="9" class="empty">No inventory with available units.</td></tr>';
-   q('#e8MarketEscrow').innerHTML='<div class="status '+(M.orders.filter(o=>o.escrow_status==='secured').length?'ok':'')+'">'+M.orders.filter(o=>o.escrow_status==='secured').length+' secured order(s)</div><div class="status '+(M.orders.filter(o=>o.status==='disputed').length?'warn':'')+'">'+M.orders.filter(o=>o.status==='disputed').length+' disputed order(s)</div><div class="wrap"><table style="min-width:620px"><thead><tr><th>Order</th><th>Status</th><th>Payment</th><th>Escrow</th><th>Total</th></tr></thead><tbody>'+ (M.orders.map(o=>'<tr><td class="mono">'+mEsc(o.order_number)+'</td><td>'+mEsc(o.status.replaceAll('_',' '))+'</td><td>'+mEsc(o.payment_status)+'</td><td>'+mEsc(o.escrow_status.replaceAll('_',' '))+'</td><td>'+money2(o.subtotal_usd)+'</td></tr>').join('')||'<tr><td colspan="5" class="empty">No marketplace orders yet.</td></tr>')+'</tbody></table></div>';
-   q('#e8MarketPayments').innerHTML=M.payments.map(p=>'<div class="e8-reset-row"><div><strong>'+mEsc(p.label)+'</strong><small>'+mEsc(p.note||'')+'</small></div><span class="tag '+(p.enabled?'t-completed':'t-pending')+'">'+(p.enabled?'enabled':'not connected')+'</span></div>').join('')||'<div class="empty">No payment methods configured.</div>';
- }
- document.addEventListener('click',async e=>{
-   const id=e.target.dataset?.msave;if(!id||M.busy.has(id))return;M.busy.add(id);
-   try{
-     const tr=e.target.closest('tr[data-mi]'),get=k=>tr?.querySelector('[data-mf="'+k+'"]'),existing=M.list.find(x=>x.inventory_item_id===id),inv=M.inv.find(x=>x.id===id);
-     if(!tr||!inv)throw new Error('Inventory item not found');
-     const payload={inventory_item_id:id,seller_id:inv.supplier_id||null,title:get('title').value.trim()||inv.name,category:get('category').value.trim()||'Gaming Items',delivery_type:get('delivery').value,is_published:get('published').checked,updated_at:new Date().toISOString()};
-     const res=existing?await sb.from('marketplace_listings').update(payload).eq('id',existing.id).select().single():await sb.from('marketplace_listings').insert(payload).select().single();
-     if(res.error)throw res.error;await load();
-   }catch(x){msg(x.message||'Could not save listing.')}finally{M.busy.delete(id)}
- });
- q('[data-v="market"]')?.addEventListener('click',()=>setTimeout(load,50));
- addEventListener('load',()=>setTimeout(()=>{if(q('#market')?.classList.contains('on'))load()},300));
- window.e8MarketplaceAdmin={load};
-})();
 </script></body></html>
