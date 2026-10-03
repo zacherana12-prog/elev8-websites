@@ -437,7 +437,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 .e8-report-toolbar{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(255,255,255,.08);border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.012))}
 .e8-report-toolbar>div{display:grid;gap:4px}.e8-report-toolbar strong{font-size:14px}.e8-report-toolbar span{font-size:12px;color:var(--mu)}
 .e8-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}.e8-section-head span{font-size:11px;color:var(--mu)}
-.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-ledger-status{min-width:112px;padding:7px 9px}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
+.e8-ledger-table th,.e8-ledger-table td{white-space:nowrap}.e8-ledger-status{min-width:112px;padding:7px 9px}.e8-inv-edit{font-variant-numeric:tabular-nums}.e8-inv-edit input,.e8-inv-edit select{width:100%;min-width:78px;padding:7px 8px}.e8-inv-edit-name{min-width:155px!important}.e8-inv-edit-ms{min-width:120px!important}.e8-inv-edit-account{min-width:105px!important}.e8-inv-action{display:flex;gap:6px;flex-wrap:wrap}.e8-inv-save{color:#fff;border-color:rgba(255,216,77,.38);background:rgba(255,216,77,.10)}.e8-inv-save:hover{background:rgba(255,216,77,.16);border-color:rgba(255,216,77,.62)}.e8-inv-locked{opacity:.7}.e8-compact-panel{margin-top:14px;border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:0 14px;background:rgba(255,255,255,.018)}
 .e8-compact-panel summary{cursor:pointer;padding:13px 2px;font-weight:700;color:var(--e-yellow,#ffd84d);list-style:none}.e8-compact-panel summary::-webkit-details-marker{display:none}.e8-compact-panel summary::after{content:'+';float:right;color:var(--mu)}.e8-compact-panel[open] summary::after{content:'−'}
 .e8-management-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 0 14px}.e8-management-grid .card{height:100%}
 .e8-wallet-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:14px}.e8-wallet-stats .stat{min-height:96px!important}
@@ -2283,12 +2283,40 @@ window.e8LoadLiveDashboard=loadLiveDashboard;
 window.e8SyncInventory=syncLocalInventory;
 window.e8LoadSettings=loadCfg;
 
+async function saveLiveInventoryEdit(localId){
+ if(!ready()){msg('Sign in as Admin before editing inventory.');return}
+ var row=document.querySelector('[data-e8-inv-row="'+localId.replace(/"/g,'&quot;')+'"]');if(!row)return;
+ var get=function(k){var el=row.querySelector('[data-e8-inv-field="'+k+'"]');return el?el.value.trim():''};
+ var item=S.items.find(function(x){return x.id===localId});if(!item){msg('Inventory item could not be found.');return}
+ var name=get('name'),ms=get('ms'),account=get('account');
+ var qty=Math.floor(Number(get('qty'))),cost=Number(get('cost')),price=Number(get('price'));
+ var sold=Math.max(0,Number(item.soldQty||0));
+ if(!name){msg('Item name is required.');return}
+ if(!Number.isFinite(qty)||qty<sold){msg('Quantity cannot be lower than sold quantity ('+sold+').');return}
+ if(!Number.isFinite(cost)||cost<0||!Number.isFinite(price)||price<0){msg('Cost and selling price must be valid non-negative numbers.');return}
+ var status=row.querySelector('[data-st="'+localId+'"]')?.value||item.status;
+ var soldToSave=status==='SOLD'&&sold===0?qty:sold;
+ var btn=row.querySelector('[data-e8-inv-save="'+localId+'"]');if(btn)btn.disabled=true;
+ var find=await sb.from('inventory_items').select('id').eq('legacy_id','local:'+localId).maybeSingle();
+ if(find.error||!find.data){if(btn)btn.disabled=false;msg('Inventory record could not be found in Supabase.');return}
+ var u=await sb.from('inventory_items').update({name:name,ms:ms,quantity:qty,sold_quantity:soldToSave,cost:cost,selling_price_usd:price,account:account,status:status,updated_at:new Date().toISOString()}).eq('id',find.data.id).select().maybeSingle();
+ if(u.error||!u.data){if(btn)btn.disabled=false;msg('Inventory update failed: '+(u.error?.message||'Unknown error'));return}
+ Object.assign(item,{name:name,ms:ms,qty:qty,soldQty:soldToSave,cost:cost,price:price,account:account,status:status});
+ save();lastLocalSig='';lastRemoteSig='';
+ renderInv();renderQty();await loadLiveDashboard();
+ msg('Inventory updated · '+name+' · '+new Date().toLocaleTimeString());
+ if(btn)btn.disabled=false;
+}
+document.addEventListener('click',function(ev){
+ var id=ev.target?.dataset?.e8InvSave;if(id)saveLiveInventoryEdit(id);
+});
+
 renderDash=function(){};
 renderInv=function(){
  var arr=S.items||[];
  E('tInv').innerHTML=arr.length?arr.slice().reverse().map(function(i){
   var c=calc(i),qty=Math.max(0,Number(i.qty||0)),sold=Math.min(qty,Math.max(0,Number(i.soldQty||0))),rem=Math.max(0,qty-sold);
-  return '<tr><td>'+esc8(i.name||'Untitled')+' <span style="color:var(--mu)">×'+qty+'</span></td><td>'+esc8(i.ms||'')+'</td><td>'+qty+'</td><td>'+sold+'</td><td class="'+(rem?'pos':'')+'">'+rem+'</td><td>'+money8(i.cost)+'</td><td>$'+Number(i.price||0).toFixed(2)+'</td><td>'+money8(c.net)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+money8(c.profit)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+c.pct.toFixed(1)+'%</td><td>'+esc8(i.account||'')+'</td><td><select data-st="'+i.id+'">'+ST.map(function(s){return '<option'+(s===i.status?' selected':'')+'>'+esc8(s)+'</option>'}).join('')+'</select></td><td>'+funds(i)+'</td><td><button class="sm" data-e8-sale="'+i.id+'" '+(rem?'':'disabled')+'>Record sale</button> <button class="sm" data-di="'+i.id+'">Delete</button></td></tr>'
+  return '<tr data-e8-inv-row="'+esc8(i.id)+'"><td><input class="e8-inv-edit e8-inv-edit-name" data-e8-inv-field="name" value="'+esc8(i.name||'Untitled')+'"></td><td><input class="e8-inv-edit e8-inv-edit-ms" data-e8-inv-field="ms" value="'+esc8(i.ms||'')+'" placeholder="M/s"></td><td><input class="e8-inv-edit" type="number" min="'+sold+'" step="1" data-e8-inv-field="qty" value="'+qty+'"></td><td class="e8-inv-locked">'+sold+'</td><td class="'+(rem?'pos':'')+'">'+rem+'</td><td><input class="e8-inv-edit" type="number" min="0" step="0.01" data-e8-inv-field="cost" value="'+Number(i.cost||0).toFixed(2)+'"></td><td><input class="e8-inv-edit" type="number" min="0" step="0.01" data-e8-inv-field="price" value="'+Number(i.price||0).toFixed(2)+'"></td><td>'+money8(c.net)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+money8(c.profit)+'</td><td class="'+(c.profit>=0?'pos':'neg')+'">'+c.pct.toFixed(1)+'%</td><td><input class="e8-inv-edit e8-inv-edit-account" data-e8-inv-field="account" value="'+esc8(i.account||'')+'"></td><td><select class="e8-inv-edit" data-st="'+esc8(i.id)+'">'+ST.map(function(s){return '<option'+(s===i.status?' selected':'')+'>'+esc8(s)+'</option>'}).join('')+'</select></td><td>'+funds(i)+'</td><td><div class="e8-inv-action"><button class="sm e8-inv-save" type="button" data-e8-inv-save="'+esc8(i.id)+'">Save edits</button><button class="sm" data-e8-sale="'+esc8(i.id)+'" '+(rem?'':'disabled')+'>Record sale</button><button class="sm" data-di="'+esc8(i.id)+'">Delete</button></div></td></tr>'
  }).join(''):'<tr><td colspan="14" class="empty">No inventory yet.</td></tr>';
  E('accs').innerHTML=(S.vault||[]).map(function(v){return '<option value="'+esc8(v.name)+'">'}).join('');
 };
