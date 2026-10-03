@@ -222,6 +222,47 @@ input,select,textarea{max-width:100%;min-width:0!important}
   nav button{flex:1 1 48%!important}
 }
 </style>
+
+<style id="e8-sleek-ui">
+/* ELEV8 Supplier — sleek utility UI */
+:root{--s-bg:#08090c;--s-surface:#0d0f13;--s-surface2:#111419;--s-border:#20242c;--s-border2:#2a2f38;--s-text:#f3f4f6;--s-muted:#9aa1ad;--s-accent:#e9c84a}
+html,body{background:var(--s-bg)!important;color:var(--s-text)!important;max-width:100%;overflow-x:hidden!important}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:13px!important;line-height:1.45!important;text-shadow:none!important}
+body::before,body::after{display:none!important}
+.box{max-width:1180px!important;width:100%!important}
+#auth{background:var(--s-surface)!important;border:1px solid var(--s-border)!important;box-shadow:none!important;border-radius:10px!important;padding:22px!important}
+.logo{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:13px!important;letter-spacing:.09em!important;background:none!important;color:#fff!important}
+h2{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:21px!important;font-weight:650!important;letter-spacing:-.025em!important;margin-bottom:13px!important;padding-bottom:9px!important;border-bottom:1px solid var(--s-border)!important}
+h3{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:9px!important;font-weight:700!important;letter-spacing:.1em!important;color:#c8ced7!important;margin-bottom:9px!important}
+h3::before{display:none!important}
+.card{background:var(--s-surface)!important;border:1px solid var(--s-border)!important;box-shadow:none!important;border-radius:9px!important;padding:13px!important;margin-bottom:9px!important}
+.card:hover{border-color:var(--s-border2)!important}
+.grid{gap:8px!important;margin-bottom:9px!important}
+.stat{background:var(--s-surface)!important;border:1px solid var(--s-border)!important;border-top:1px solid var(--s-border2)!important;padding:10px 11px!important}
+.stat b{font-size:19px!important;margin-top:5px!important}
+label{font-size:11px!important;color:#abb2bd!important;gap:5px!important}
+input,select,textarea{background:#0a0c10!important;border:1px solid var(--s-border2)!important;border-radius:7px!important;padding:8px 9px!important;min-height:34px!important;font-size:12px!important;box-shadow:none!important}
+input:focus,select:focus,textarea:focus{border-color:#bca43e!important;box-shadow:0 0 0 2px rgba(233,200,74,.08)!important}
+.btn{min-height:34px!important;padding:8px 12px!important;border-radius:7px!important;background:#e7e8ea!important;color:#101114!important;box-shadow:none!important;font-size:10px!important}
+.sm{min-height:30px!important;padding:6px 9px!important;border-radius:7px!important;background:#0d1014!important;color:#b5bbc5!important;border:1px solid #2a3038!important;box-shadow:none!important;font-size:10px!important}
+.sm:hover{background:#15191f!important;color:#fff!important}
+nav{border-bottom:1px solid var(--s-border)!important;overflow:hidden!important;display:flex!important;flex-wrap:wrap!important;gap:2px!important;margin:14px 0 13px!important}
+nav button{padding:8px 10px!important;font-size:11px!important;color:#929aa6!important;border-radius:6px!important}
+nav button.on{color:#f1f3f6!important;background:#15181d!important}
+nav button.on::after{background:var(--s-accent)!important;height:2px!important}
+.wrap{overflow-x:hidden!important}
+table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+th{padding:7px 6px!important;background:#0b0d11!important;color:#7f8793!important;font-size:8px!important;letter-spacing:.07em!important}
+td{padding:8px 6px!important;font-size:10.5px!important;white-space:normal!important;overflow-wrap:anywhere!important}
+tbody tr:hover{background:#101318!important}
+.e8-report-toolbar{padding:11px 12px!important;margin-bottom:9px!important;border-radius:9px!important;background:#0d1014!important;border:1px solid var(--s-border)!important}
+.e8-report-toolbar strong{font-size:12px!important}.e8-report-toolbar span{font-size:10px!important}
+.e8-comm-hero{padding:12px 14px!important;margin-bottom:9px!important;border-radius:9px!important;background:#0d1014!important;border:1px solid var(--s-border)!important;box-shadow:none!important}
+.e8-comm-hero h2{font-size:19px!important}.e8-comm-hero p{font-size:10px!important}
+.e8-comm-grid{gap:9px!important}.e8-comm-card{min-height:410px!important}
+#fChat,#fDm{min-width:0!important}
+@media(max-width:620px){nav button{flex:1 1 45%!important}.card{padding:11px!important}th{font-size:7px!important}}
+</style>
 </head><body><div class="box">
 <div id="auth" class="card"><div class="logo">ELEV8 SUPPLIER PORTAL</div><p id="aMsg" style="color:var(--am);min-height:18px;font-size:13px"></p>
 <form id="fAuth"><label id="nmL" hidden>Supplier name<input name="name" autocomplete="name"></label><div id="payL" hidden style="display:grid;gap:10px"><label>Payment method<select name="pay_method"><option value="">Choose one</option><option>GCash</option><option>Bank Transfer</option><option>Maya</option></select></label>
