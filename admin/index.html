@@ -451,7 +451,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 .e8-supplier-reset small{display:block;color:var(--mu);font-size:11px;margin-top:2px}.e8-reset-danger{color:var(--pk)!important}
 </style></head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
-<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="sup">Supplier Report &amp; Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="settings">Customization</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
+<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="market">Marketplace</button><button data-v="sup">Supplier Report &amp; Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="settings">Customization</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
 <main>
 <section id="dash" class="view on"><h2>Total Performance</h2><div class="grid" id="stats"></div><div id="e8DashMeta" style="font-size:11px;color:var(--e8-muted,#9ca4b5);margin:4px 0 12px"></div><div class="card" id="e8DashHealth"><h3>Live workspace</h3><div style="font-size:12px;color:var(--e8-muted,#9ca4b5)">Waiting for live data…</div></div><div class="card" id="e8DashBreakdown"><h3>Operational summary</h3><div id="e8DashBreakdownBody" style="display:grid;gap:4px;font-size:12px"></div></div></section>
 
@@ -643,7 +643,15 @@ Charles:
   <select id="dSup" hidden></select><button class="sm" id="bDel" type="button" hidden>Reset supplier data</button>
 </div>
 <div id="dMsg" style="font-size:13px;color:var(--cy);min-height:20px"></div></section>
-</main>
+<section id="market" class="view"><h2>Marketplace</h2>
+<div class="card"><h3>Storefront listings <span style="font-weight:400;color:var(--mu)">Publish existing inventory without creating a second stock system.</span></h3>
+<div id="e8MarketMsg" style="min-height:20px;color:var(--cy);font-size:12px;margin-bottom:10px">Open this tab after signing in as Admin.</div>
+<div class="wrap"><table><thead><tr><th>Inventory</th><th>Seller</th><th>Price</th><th>Available</th><th>Listing title</th><th>Category</th><th>Delivery</th><th>Published</th><th>Save</th></tr></thead><tbody id="e8MarketListings"></tbody></table></div></div>
+<div class="row">
+<div class="card" style="flex:1;min-width:340px"><h3>Escrow controls</h3><div id="e8MarketEscrow" style="display:grid;gap:8px"></div></div>
+<div class="card" style="flex:1;min-width:340px"><h3>Payment methods</h3><div id="e8MarketPayments" style="display:grid;gap:8px"></div><div style="font-size:11px;color:var(--mu);margin-top:10px">Providers remain unavailable to customers until their credentials, merchant onboarding, and webhook verification are configured.</div></div>
+</div>
+</section></main>
 <div id="modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000c;z-index:9;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))"><div class="card" style="max-width:460px;margin:0;border-color:var(--pk)"><h3 id="mT" style="color:var(--pk)"></h3><p id="mB" style="margin:0 0 10px"></p><p id="mW" style="margin:0 0 14px;font-size:13px"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sm" id="mC" type="button" style="color:var(--tx)">Cancel</button><button class="sm" id="mD" type="button" style="color:var(--cy)">Download backup first</button><button class="btn" id="mY" type="button"></button></div></div></div>
 <script>
 let RATE=59.5,MARKET_FEE_PCT=15,PAYOUT_FEE_PCT=4;const DAY=864e5,K='elev8_tracker_v1',ST=['PENDING DELIVERY','DELIVERED / PENDING PAYMENT','COMPLETED','CANCELLED / REFUNDED','UNLISTED','LISTED','PARTIALLY SOLD','SOLD','AVAILABLE'];
@@ -2570,4 +2578,45 @@ document.addEventListener('click',function(ev){
  if(d.e8ResetTab)resetTabData(d.e8ResetTab);
 });
 window.addEventListener('load',function(){setTimeout(renderTabResetControls,900);});
-})();</script></body></html>
+})();</script><script id="e8-market-admin-script">
+(()=>{const M={loaded:false,inv:[],list:[],orders:[],payments:[],busy:new Set()};
+ const q=s=>document.querySelector(s), msg=t=>{const x=q('#e8MarketMsg');if(x)x.textContent=t};
+ const mEsc=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money2=n=>'</html>+Number(n||0).toFixed(2);
+ async function load(){
+   if(!sb){msg('Admin authentication is still loading.');return}
+   const [ir,lr,or,pr]=await Promise.all([
+     sb.from('inventory_items').select('id,name,ms,quantity,sold_quantity,cost,selling_price_usd,status,supplier_id').neq('status','CANCELLED / REFUNDED').order('updated_at',{ascending:false}).limit(500),
+     sb.from('marketplace_listings').select('*').order('created_at',{ascending:false}).limit(500),
+     sb.from('marketplace_orders').select('id,order_number,status,payment_status,escrow_status,quantity,subtotal_usd,seller_amount_usd,created_at,seller_id').order('created_at',{ascending:false}).limit(50),
+     sb.from('marketplace_payment_methods').select('*').order('sort_order')
+   ]);
+   const err=[ir,lr,or,pr].find(x=>x.error);if(err){msg(err.error.message);return}
+   M.inv=ir.data||[];M.list=lr.data||[];M.orders=or.data||[];M.payments=pr.data||[];render();M.loaded=true;msg('Marketplace synchronized with the live inventory database.');
+ }
+ function render(){
+   const byId=new Map(M.list.map(x=>[x.inventory_item_id,x])),sellerIds=[...new Set(M.inv.map(x=>x.supplier_id).filter(Boolean))],sellerMap=new Map();
+   if(sellerIds.length)sb.from('profiles').select('id,name').in('id',sellerIds).then(({data})=>(data||[]).forEach(p=>sellerMap.set(p.id,p.name||'Supplier'));
+   const rows=M.inv.filter(i=>Number(i.quantity)>Number(i.sold_quantity)).map(i=>{
+     const l=byId.get(i.id),avail=Math.max(0,Number(i.quantity)-Number(i.sold_quantity));
+     return '<tr data-mi="'+i.id+'"><td><strong>'+mEsc(i.name)+'</strong><div style="color:var(--mu);font-size:10px">'+mEsc(i.ms||'')+'</div></td><td>'+mEsc(sellerMap.get(i.supplier_id)||'Platform')+'</td><td>'+money2(i.selling_price_usd)+'</td><td>'+avail+'</td><td><input data-mf="title" value="'+mEsc(l?.title||i.name)+'"></td><td><input data-mf="category" value="'+mEsc(l?.category||'Gaming Items')+'"></td><td><select data-mf="delivery"><option value="instant"'+(l?.delivery_type==='instant'?' selected':'')+'>Instant</option><option value="manual"'+(l?.delivery_type==='manual'||!l?' selected':'')+'>Manual</option><option value="account"'+(l?.delivery_type==='account'?' selected':'')+'>Account</option><option value="code"'+(l?.delivery_type==='code'?' selected':'')+'>Code</option></select></td><td><label style="display:flex;flex-direction:row;align-items:center;gap:6px"><input data-mf="published" type="checkbox" '+(l?.is_published?'checked':'')+' style="width:auto"><span style="font-size:10px">'+(l?.is_published?'LIVE':'OFF')+'</span></label></td><td><button class="sm" data-msave="'+i.id+'">'+(l?'Save':'Create')+'</button></td></tr>';
+   }).join('');
+   q('#e8MarketListings').innerHTML=rows||'<tr><td colspan="9" class="empty">No inventory with available units.</td></tr>';
+   q('#e8MarketEscrow').innerHTML='<div class="status '+(M.orders.filter(o=>o.escrow_status==='secured').length?'ok':'')+'">'+M.orders.filter(o=>o.escrow_status==='secured').length+' secured order(s)</div><div class="status '+(M.orders.filter(o=>o.status==='disputed').length?'warn':'')+'">'+M.orders.filter(o=>o.status==='disputed').length+' disputed order(s)</div><div class="wrap"><table style="min-width:620px"><thead><tr><th>Order</th><th>Status</th><th>Payment</th><th>Escrow</th><th>Total</th></tr></thead><tbody>'+ (M.orders.map(o=>'<tr><td class="mono">'+mEsc(o.order_number)+'</td><td>'+mEsc(o.status.replaceAll('_',' '))+'</td><td>'+mEsc(o.payment_status)+'</td><td>'+mEsc(o.escrow_status.replaceAll('_',' '))+'</td><td>'+money2(o.subtotal_usd)+'</td></tr>').join('')||'<tr><td colspan="5" class="empty">No marketplace orders yet.</td></tr>')+'</tbody></table></div>';
+   q('#e8MarketPayments').innerHTML=M.payments.map(p=>'<div class="e8-reset-row"><div><strong>'+mEsc(p.label)+'</strong><small>'+mEsc(p.note||'')+'</small></div><span class="tag '+(p.enabled?'t-completed':'t-pending')+'">'+(p.enabled?'enabled':'not connected')+'</span></div>').join('')||'<div class="empty">No payment methods configured.</div>';
+ }
+ document.addEventListener('click',async e=>{
+   const id=e.target.dataset?.msave;if(!id||M.busy.has(id))return;M.busy.add(id);
+   try{
+     const tr=e.target.closest('tr[data-mi]'),get=k=>tr?.querySelector('[data-mf="'+k+'"]'),existing=M.list.find(x=>x.inventory_item_id===id),inv=M.inv.find(x=>x.id===id);
+     if(!tr||!inv)throw new Error('Inventory item not found');
+     const payload={inventory_item_id:id,seller_id:inv.supplier_id||null,title:get('title').value.trim()||inv.name,category:get('category').value.trim()||'Gaming Items',delivery_type:get('delivery').value,is_published:get('published').checked,updated_at:new Date().toISOString()};
+     const res=existing?await sb.from('marketplace_listings').update(payload).eq('id',existing.id).select().single():await sb.from('marketplace_listings').insert(payload).select().single();
+     if(res.error)throw res.error;await load();
+   }catch(x){msg(x.message||'Could not save listing.')}finally{M.busy.delete(id)}
+ });
+ q('[data-v="market"]')?.addEventListener('click',()=>setTimeout(load,50));
+ addEventListener('load',()=>setTimeout(()=>{if(q('#market')?.classList.contains('on'))load()},300));
+ window.e8MarketplaceAdmin={load};
+})();
+</script></body></html>
