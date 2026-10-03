@@ -451,7 +451,7 @@ button,a,input,select,textarea{touch-action:manipulation}
 .e8-supplier-reset small{display:block;color:var(--mu);font-size:11px;margin-top:2px}.e8-reset-danger{color:var(--pk)!important}
 </style></head><body class="e8admin">
 <aside><div class="logo">ELEV8 SALES<br>TRACKER</div><div class="by"><span id="sbAv"></span>by Zach</div>
-<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="market">Marketplace</button><button data-v="sup">Supplier Report &amp; Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="settings">Customization</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
+<nav><button data-v="dash" class="on">Total Performance</button><button data-v="inv">Inventory</button><button data-v="market">Marketplace</button><button data-v="sellerverify">Seller Verification</button><button data-v="sup">Supplier Report &amp; Stock</button><button data-v="payments">Payments</button><button data-v="req">Buying</button><button data-v="chat">Chat</button><button data-v="dm">Direct Messages</button><button data-v="perm">Permissions</button><button data-v="upd">Updates</button><button data-v="settings">Customization</button><button data-v="vault">Accounts &amp; Passwords</button><button data-v="data">Save &amp; Export</button></nav></aside>
 <main>
 <section id="dash" class="view on"><h2>Total Performance</h2><div class="grid" id="stats"></div><div id="e8DashMeta" style="font-size:11px;color:var(--e8-muted,#9ca4b5);margin:4px 0 12px"></div><div class="card" id="e8DashHealth"><h3>Live workspace</h3><div style="font-size:12px;color:var(--e8-muted,#9ca4b5)">Waiting for live data…</div></div><div class="card" id="e8DashBreakdown"><h3>Operational summary</h3><div id="e8DashBreakdownBody" style="display:grid;gap:4px;font-size:12px"></div></div></section>
 
@@ -651,7 +651,10 @@ Charles:
 <div class="card" style="flex:1;min-width:340px"><h3>Escrow controls</h3><div id="e8MarketEscrow" style="display:grid;gap:8px"></div></div>
 <div class="card" style="flex:1;min-width:340px"><h3>Payment methods</h3><div id="e8MarketPayments" style="display:grid;gap:8px"></div><div style="font-size:11px;color:var(--mu);margin-top:10px">Providers remain unavailable to customers until their credentials, merchant onboarding, and webhook verification are configured.</div></div>
 </div>
-</section></main>
+</section><section id="sellerverify" class="view"><h2>Seller Verification</h2>
+<div class="card"><h3>Seller applications <span style="font-weight:400;color:var(--mu)">Review applicant information before seller access is enabled.</span></h3>
+<div id="e8SellerMsg" style="min-height:20px;color:var(--cy);font-size:12px;margin-bottom:10px"></div>
+<div class="wrap"><table><thead><tr><th>Applicant</th><th>Legal name</th><th>Country</th><th>Contact</th><th>Seller type</th><th>Platforms</th><th>Categories</th><th>Status</th><th>Review</th></tr></thead><tbody id="e8SellerApps"></tbody></table></div></div></section></main>
 <div id="modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000c;z-index:9;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))"><div class="card" style="max-width:460px;margin:0;border-color:var(--pk)"><h3 id="mT" style="color:var(--pk)"></h3><p id="mB" style="margin:0 0 10px"></p><p id="mW" style="margin:0 0 14px;font-size:13px"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="sm" id="mC" type="button" style="color:var(--tx)">Cancel</button><button class="sm" id="mD" type="button" style="color:var(--cy)">Download backup first</button><button class="btn" id="mY" type="button"></button></div></div></div>
 <script>
 let RATE=59.5,MARKET_FEE_PCT=15,PAYOUT_FEE_PCT=4;const DAY=864e5,K='elev8_tracker_v1',ST=['PENDING DELIVERY','DELIVERED / PENDING PAYMENT','COMPLETED','CANCELLED / REFUNDED','UNLISTED','LISTED','PARTIALLY SOLD','SOLD','AVAILABLE'];
@@ -2618,6 +2621,30 @@ window.addEventListener('load',function(){setTimeout(renderTabResetControls,900)
  q('[data-v="market"]')?.addEventListener('click',()=>setTimeout(load,50));
  addEventListener('load',()=>setTimeout(()=>{if(q('#market')?.classList.contains('on'))load()},300));
  window.e8MarketplaceAdmin={load};
+})();
+</script><script id="e8-seller-review-script">
+(()=>{const V={apps:[],busy:new Set()};
+ const q=s=>document.querySelector(s), esc2=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const msg=t=>{const x=q('#e8SellerMsg');if(x)x.textContent=t};
+ async function load(){
+   if(!sb){msg('Admin authentication is still loading.');return}
+   const {data,error}=await sb.from('seller_verification_requests').select('*').order('created_at',{ascending:false}).limit(200);
+   if(error){msg(error.message);return} V.apps=data||[];render();msg('Seller verification queue synchronized.');
+ }
+ function render(){
+   q('#e8SellerApps').innerHTML=V.apps.length?V.apps.map(a=>'<tr data-sa="'+a.id+'"><td><strong>'+esc2(a.display_name)+'</strong><div style="color:var(--mu);font-size:10px">'+esc2(a.application_note||'')+'</div></td><td>'+esc2(a.legal_name)+'</td><td>'+esc2(a.country)+'</td><td>'+esc2(a.contact_method)+': '+esc2(a.contact_value)+'</td><td>'+esc2(a.seller_type)+'</td><td>'+esc2(a.gaming_platforms||'—')+'</td><td>'+esc2(a.inventory_categories||'—')+'</td><td><span class="tag '+(a.status==='approved'?'t-completed':a.status==='denied'?'t-rejected':'t-pending')+'">'+esc2(a.status)+'</span></td><td><div style="display:grid;gap:6px;min-width:190px"><textarea data-af="note" rows="2" placeholder="Admin note">'+esc2(a.admin_note||'')+'</textarea><div class="row"><button class="sm" data-approve="'+a.id+'">Approve</button><button class="sm" data-deny="'+a.id+'">Deny</button></div></div></td></tr>').join(''):'<tr><td colspan="9" class="empty">No seller applications yet.</td></tr>';
+ }
+ async function review(id,status){
+   if(V.busy.has(id))return;V.busy.add(id);
+   try{
+     const tr=q('tr[data-sa="'+id+'"]'),note=tr?.querySelector('[data-af="note"]')?.value.trim()||null;
+     const {error}=await sb.from('seller_verification_requests').update({status,admin_note:note,reviewed_by:(await sb.auth.getUser()).data.user?.id||null,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
+     if(error)throw error;await load();
+   }catch(e){msg(e.message||'Could not review application.')}finally{V.busy.delete(id)}
+ }
+ document.addEventListener('click',e=>{const a=e.target.dataset?.approve,d=e.target.dataset?.deny;if(a)review(a,'approved');else if(d)review(d,'denied')});
+ q('[data-v="sellerverify"]')?.addEventListener('click',()=>setTimeout(load,50));
+ window.e8SellerVerification={load};
 })();
 </script></body></html>+Number(n||0).toFixed(2);
  async function load(){
