@@ -2638,7 +2638,7 @@ window.addEventListener('load',function(){setTimeout(renderTabResetControls,900)
    if(V.busy.has(id))return;V.busy.add(id);
    try{
      const tr=q('tr[data-sa="'+id+'"]'),note=tr?.querySelector('[data-af="note"]')?.value.trim()||null;
-     const {error}=await sb.from('seller_verification_requests').update({status,admin_note:note,reviewed_by:(await sb.auth.getUser()).data.user?.id||null,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',id);
+     const {error}=await sb.rpc('review_seller_verification',{p_request_id:id,p_status:status,p_admin_note:note});
      if(error)throw error;await load();
    }catch(e){msg(e.message||'Could not review application.')}finally{V.busy.delete(id)}
  }
