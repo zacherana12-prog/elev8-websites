@@ -37,6 +37,7 @@ footer{border-top:1px solid var(--line);padding:28px 0 50px;color:var(--mu);font
     <button class="navbtn" id="ordersBtn">My Orders</button>
   </div>
   <div class="account">
+    <button class="navbtn" id="profileBtn" hidden>Profile</button>
     <button class="navbtn" id="authBtn">Sign in</button>
     <div class="avatar" id="avatar" hidden>?</div>
   </div>
@@ -104,6 +105,46 @@ footer{border-top:1px solid var(--line);padding:28px 0 50px;color:var(--mu);font
   </div>
 </div></div>
 
+<div class="overlay" id="profileOverlay"><div class="modal">
+  <div class="modalHead"><h3>My ELEV8 profile</h3><button class="x" data-close="profileOverlay">×</button></div>
+  <div class="modalBody">
+    <div class="notice" style="margin-bottom:14px"><strong>Buyer profile</strong> is available immediately. <strong>Seller profile</strong> becomes public only after verification.</div>
+    <div class="form">
+      <label class="label">Display name<input class="input" id="profileDisplayName" maxlength="80"></label>
+      <label class="label">Bio<textarea class="input" id="profileBio" rows="3" maxlength="600" placeholder="Tell buyers a little about you."></textarea></label>
+      <div class="row"><button class="primary" id="saveProfile">Save profile</button><button class="secondary" id="openSellerApplication">Apply to sell</button></div>
+      <div id="profileStatus" class="status"></div>
+    </div>
+    <div id="sellerStatusCard" class="order" style="margin-top:15px"></div>
+  </div>
+</div></div>
+
+<div class="overlay" id="sellerOverlay"><div class="modal">
+  <div class="modalHead"><h3>Seller verification</h3><button class="x" data-close="sellerOverlay">×</button></div>
+  <div class="modalBody">
+    <div class="notice" style="margin-bottom:14px">ELEV8 reviews seller applications before marketplace selling is enabled. Only information needed for the verification review should be submitted.</div>
+    <form class="form" id="sellerForm">
+      <label class="label">Marketplace display name<input class="input" name="display_name" required maxlength="80"></label>
+      <label class="label">Legal/full name<input class="input" name="legal_name" required maxlength="120"></label>
+      <label class="label">Country<input class="input" name="country" required maxlength="80"></label>
+      <label class="label">Preferred contact method<select class="input" name="contact_method"><option>Email</option><option>Discord</option><option>Telegram</option><option>Other</option></select></label>
+      <label class="label">Contact information<input class="input" name="contact_value" required maxlength="180"></label>
+      <label class="label">Seller type<select class="input" name="seller_type"><option value="individual">Individual</option><option value="business">Business</option></select></label>
+      <label class="label">Gaming platforms<input class="input" name="gaming_platforms" placeholder="Roblox, Steam, etc." maxlength="200"></label>
+      <label class="label">Item categories<input class="input" name="inventory_categories" placeholder="Eggs, accounts, currencies, items…" maxlength="300"></label>
+      <label class="label">Selling experience<textarea class="input" name="experience" rows="3" maxlength="1200"></textarea></label>
+      <label class="label">Application note<textarea class="input" name="application_note" rows="3" maxlength="1200" placeholder="Anything Admin should know?"></textarea></label>
+      <div class="row"><button class="primary" type="submit">Submit for verification</button><button class="secondary" type="button" data-close="sellerOverlay">Cancel</button></div>
+      <div id="sellerMsg" class="status"></div>
+    </form>
+  </div>
+</div></div>
+
+<div class="overlay" id="sellerPublicOverlay"><div class="modal">
+  <div class="modalHead"><h3>Seller profile</h3><button class="x" data-close="sellerPublicOverlay">×</button></div>
+  <div class="modalBody" id="sellerPublicBody"></div>
+</div></div>
+
 <div class="overlay" id="ordersOverlay"><div class="modal">
   <div class="modalHead"><h3>My orders</h3><button class="x" data-close="ordersOverlay">×</button></div>
   <div class="modalBody" id="ordersBody"></div>
@@ -117,7 +158,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>'$'+Number(n||0).toFixed(2);
 const stateLabel=s=>String(s||'').replaceAll('_',' ');
-let listings=[],categories=[],chosen=null,user=null;
+let listings=[],categories=[],chosen=null,user=null,profile=null;
 
 function open(id){$('#'+id).classList.add('open')}
 function close(id){$('#'+id).classList.remove('open')}
@@ -126,6 +167,7 @@ document.addEventListener('click',e=>{const c=e.target.closest('[data-close]');i
 function initials(email){return (email||'?').trim().slice(0,1).toUpperCase()}
 function syncAccount(){
   $('#avatar').hidden=!user;
+  $('#profileBtn').hidden=!user;
   $('#authBtn').textContent=user?(user.email||'Account'):'Sign in';
   $('#avatar').textContent=user?initials(user.email):'?';
 }
@@ -151,6 +193,7 @@ function render(){
     '<div class="thumb">'+(x.image_url?'<img loading="lazy" src="'+esc(x.image_url)+'" alt="'+esc(x.title)+'">':'<div class="placeholder">E8</div>')+'</div>'+
     '<div class="body"><div class="pillrow"><span class="badge">'+(x.featured?'FEATURED':'AVAILABLE')+'</span><span class="ms">'+esc(x.category)+'</span></div>'+
     '<div class="title">'+esc(x.title)+'</div><div class="ms">'+esc(x.ms||'Standard delivery')+'</div>'+
+    '<button class="navbtn" style="padding:6px 0;font-size:11px" data-seller="'+esc(x.seller_id||'')+'">View seller</button>'+
     '<div class="priceRow"><div><div class="price">'+money(x.price_usd)+'</div></div><div class="stock">'+Number(x.available_quantity)+' available</div></div>'+
     '<button class="cardBtn" data-buy="'+esc(x.id)+'">View &amp; buy</button></div></article>').join(''):'<div class="empty">No matching inventory is currently published.</div>';
 }
@@ -210,12 +253,57 @@ $('#signupBtn').onclick=async()=>{
   $('#authMsg').className='status ok';$('#authMsg').textContent='Account created. Check your email to confirm the account before signing in.';
 };
 $('#authBtn').onclick=async()=>{if(user){await sb.auth.signOut();return}open('authOverlay')};
+async function loadProfile(){
+  if(!user)return;
+  const {data,error}=await sb.from('marketplace_profiles').select('user_id,display_name,bio,avatar_url,buyer_enabled,seller_status,seller_verified_at,seller_review_note,created_at').eq('user_id',user.id).maybeSingle();
+  if(error){$('#profileStatus').className='status warn';$('#profileStatus').textContent=error.message;return}
+  profile=data||{user_id:user.id,display_name:user.email?.split('@')[0]||'ELEV8 User',bio:'',seller_status:'not_applied'};
+  $('#profileDisplayName').value=profile.display_name||'';
+  $('#profileBio').value=profile.bio||'';
+  const s=profile.seller_status||'not_applied';
+  $('#sellerStatusCard').innerHTML='<strong>Seller status:</strong> <span class="state '+(s==='approved'?'sec':s==='denied'||s==='suspended'?'disp':'wait')+'">'+esc(stateLabel(s))+'</span>'+
+    (profile.seller_verified_at?'<div class="orderMeta">Verified '+new Date(profile.seller_verified_at).toLocaleDateString()+'</div>':'')+
+    (profile.seller_review_note?'<div class="orderMeta">'+esc(profile.seller_review_note)+'</div>':'');
+  $('#openSellerApplication').disabled=s==='approved'||s==='pending';
+  $('#openSellerApplication').textContent=s==='pending'?'Application pending':s==='approved'?'Seller verified':'Apply to sell';
+}
+$('#profileBtn').onclick=async()=>{await loadProfile();open('profileOverlay')};
+$('#saveProfile').onclick=async()=>{
+  if(!user)return;
+  const payload={user_id:user.id,display_name:$('#profileDisplayName').value.trim()||'ELEV8 User',bio:$('#profileBio').value.trim()||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('marketplace_profiles').upsert(payload,{onConflict:'user_id'});
+  $('#profileStatus').className='status '+(error?'warn':'ok');$('#profileStatus').textContent=error?error.message:'Profile saved.';
+  if(!error){profile={...profile,...payload};syncAccount();await loadProfile();}
+};
+$('#openSellerApplication').onclick=async()=>{
+  if(!user)return;
+  await loadProfile();if(['approved','pending'].includes(profile?.seller_status))return;
+  $('#sellerForm').querySelector('[name=display_name]').value=profile?.display_name||'';
+  open('sellerOverlay');
+};
+$('#sellerForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!user)return;
+  const f=new FormData(e.target);const payload=Object.fromEntries(f.entries());payload.user_id=user.id;
+  $('#sellerMsg').className='status warn';$('#sellerMsg').textContent='Submitting application…';
+  const {error}=await sb.from('seller_verification_requests').insert(payload);
+  if(error){$('#sellerMsg').textContent=error.message;return}
+  $('#sellerMsg').className='status ok';$('#sellerMsg').textContent='Application submitted. ELEV8 Admin will review it.';
+  await loadProfile();
+});
+async function openSellerPublic(id){
+  if(!id)return;
+  const {data,error}=await sb.from('marketplace_public_seller_profiles').select('display_name,bio,avatar_url,seller_verified_at').eq('user_id',id).maybeSingle();
+  if(error||!data){$('#sellerPublicBody').innerHTML='<div class="empty">Seller profile is not publicly available.</div>';open('sellerPublicOverlay');return}
+  $('#sellerPublicBody').innerHTML='<div style="display:grid;gap:13px">'+(data.avatar_url?'<img src="'+esc(data.avatar_url)+'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">':'')+'<div><div class="badge">VERIFIED SELLER</div><h2 style="font:800 26px var(--disp);margin:7px 0">'+esc(data.display_name)+'</h2><div style="color:var(--mu)">'+esc(data.bio||'Verified ELEV8 marketplace seller.')+'</div></div><div class="notice">Verified by ELEV8 Admin'+(data.seller_verified_at?' · '+new Date(data.seller_verified_at).toLocaleDateString():'')+'</div></div>';
+  open('sellerPublicOverlay');
+}
 $('#ordersBtn').onclick=loadOrders;$('#homeBtn').onclick=()=>scrollTo({top:0,behavior:'smooth'});$('#refreshBtn').onclick=loadListings;
 $('#search').oninput=render;$('#sort').onchange=render;
 document.addEventListener('click',async e=>{
   const cat=e.target.closest('[data-cat]');if(cat){document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));cat.classList.add('on');render();return}
   const buy=e.target.closest('[data-buy]');if(buy){openListing(buy.dataset.buy);return}
   if(e.target.id==='buyNow'){close('listingOverlay');if(await ensureUser())showCheckout()}
+  const seller=e.target.closest('[data-seller]');if(seller){e.preventDefault();openSellerPublic(seller.dataset.seller)}
 });
 window.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(x=>x.classList.remove('open'))});
 sb.auth.onAuthStateChange((_event,session)=>{user=session?.user||null;syncAccount()});
@@ -223,7 +311,7 @@ sb.channel('marketplace-public')
  .on('postgres_changes',{event:'*',schema:'public',table:'marketplace_listings'},loadListings)
  .on('postgres_changes',{event:'*',schema:'public',table:'inventory_items'},loadListings)
  .subscribe();
-(async()=>{const {data}=await sb.auth.getSession();user=data.session?.user||null;syncAccount();await loadListings()})();
+(async()=>{const {data}=await sb.auth.getSession();user=data.session?.user||null;syncAccount();if(user)await loadProfile();await loadListings()})();
 </script>
 </body>
 </html>
