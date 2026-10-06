@@ -899,10 +899,15 @@ let sb=null,R={reqs:[],resp:[],profs:[],msgs:[],dms:[],anns:[],pay:[],per:[],upd
 const rm=t=>$('rqMsg').textContent=t,rnm=id=>(R.profs.find(p=>p.id===id)||{}).name||'Supplier';
 addEventListener('load',async()=>{
  if(!window.supabase||SB_URL.startsWith('PASTE')){rm('Supplier Portal not connected: set SB_URL and SB_KEY in the code.');return}
- sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'elev8-admin-auth'}});const{data}=await sb.auth.getSession();if(data.session)rqEnter()});
+ sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'elev8-admin-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ sb.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'||!session){rqLost('Your session ended. Please sign in again.');}else if(event==='TOKEN_REFRESHED'&&session){rqEnter();}});
+ const{data}=await sb.auth.getSession();if(data.session)rqEnter();});
 async function rqEnter(){
- const{data:{user}}=await sb.auth.getUser();const{data:p}=await sb.from('profiles').select('role').eq('id',user.id).single();
- if(!p||p.role!=='admin'){await sb.auth.signOut();rm('That account is not an admin.');return}
+ const{data:{user},error:userErr}=await sb.auth.getUser();
+ if(userErr||!user){rqLost('Could not restore the Admin session. Please sign in again.');return}
+ const{data:p,error:profileErr}=await sb.from('profiles').select('role').eq('id',user.id).maybeSingle();
+ if(profileErr){rm('Could not verify Admin access: '+profileErr.message);return}
+ if(!p||p.role!=='admin'){await sb.auth.signOut({scope:'local'});rm('That account is not an admin.');return}
  $('rqLogin').hidden=true;$('rqApp').hidden=false;$('chBox').hidden=false;$('chOff').hidden=true;$('dmBox').hidden=false;$('dmOff').hidden=true;$('permBox').hidden=false;$('permOff').hidden=true;$('updBox').hidden=false;$('updOff').hidden=true;rm('');rqLoad();clearInterval(pollT);pollT=setInterval(rqLoad,8000)}
 $('fLog').onsubmit=async e=>{e.preventDefault();if(!sb)return;const{error}=await sb.auth.signInWithPassword(fd(e.target));error?rqErr(error):rqEnter()};
 document.querySelector('[data-v=chat]').addEventListener('click',()=>setTimeout(()=>{$('chL').scrollTop=1e9},0));

@@ -338,7 +338,9 @@ const listOf=q=>q.list_id?D.lists.find(l=>l.id===q.list_id):null;
 const reqOpen=q=>lstOpen(listOf(q));
 addEventListener('load',async()=>{
  if(!window.supabase||SB_URL.startsWith('PASTE')){$('aMsg').textContent='Portal is not set up yet.';return}
- sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'elev8-supplier-auth'}});sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT')lost()});const{data}=await sb.auth.getSession();if(data.session)enter()});
+ sb=supabase.createClient(SB_URL,SB_KEY,{auth:{storageKey:'elev8-supplier-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ sb.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'||!session)lost();});
+ const{data}=await sb.auth.getSession();if(data.session)enter()});
 $('aTog').onclick=()=>{mode=mode==='in'?'up':'in';$('nmL').hidden=mode==='in';$('payL').hidden=mode==='in';document.querySelectorAll('#nmL input,#payL input,#payL select').forEach(x=>x.required=mode==='up');$('aGo').textContent=mode==='in'?'Sign in':'Create account';$('aTog').textContent=mode==='in'?'New supplier? Register':'Have an account? Sign in'};
 $('fAuth').onsubmit=async e=>{e.preventDefault();if(!sb)return;const f=Object.fromEntries(new FormData(e.target));$('aMsg').textContent='';
  const r=mode==='in'?await sb.auth.signInWithPassword({email:f.email,password:f.password}):await sb.auth.signUp({email:f.email,password:f.password,options:{data:{name:(f.name||'').trim(),pay_method:f.pay_method,pay_number:(f.pay_number||'').trim(),pay_holder:(f.pay_holder||'').trim()}}});
@@ -347,9 +349,12 @@ $('fAuth').onsubmit=async e=>{e.preventDefault();if(!sb)return;const f=Object.fr
  enter()};
 function lost(m){if($('app').hidden)return;(window.T||[]).forEach(clearInterval);$('app').hidden=true;$('auth').hidden=false;$('aMsg').textContent=m||'You were signed out. Please sign in again.'}
 async function enter(){
- const{data:{user}}=await sb.auth.getUser();me=user.id;
- const{data:p}=await sb.from('profiles').select('name,role').eq('id',me).single();
- if(!p||p.role!=='supplier'){await sb.auth.signOut();$('aMsg').textContent='This is not a supplier account.';return}
+ const{data:{user},error:userErr}=await sb.auth.getUser();
+ if(userErr||!user){lost('Could not restore your Supplier session. Please sign in again.');return}
+ me=user.id;
+ const{data:p,error:profileErr}=await sb.from('profiles').select('name,role').eq('id',me).maybeSingle();
+ if(profileErr){$('aMsg').textContent='Could not verify your supplier account: '+profileErr.message;return}
+ if(!p||p.role!=='supplier'){await sb.auth.signOut({scope:'local'});$('aMsg').textContent='This is not a supplier account.';return}
  $('auth').hidden=true;$('app').hidden=false;$('who').textContent=p.name;MYN=p.name;$('pNm').textContent=p.name;
  const beat=()=>sb.rpc('touch');(window.T||[]).forEach(clearInterval);beat();load();window.T=[setInterval(beat,6e4),setInterval(load,8000)]}
 $('out').onclick=async()=>{await sb.auth.signOut({scope:'local'});location.reload()};
